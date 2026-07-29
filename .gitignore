@@ -1,0 +1,26 @@
+# --- dependencies -----------------------------------------------------------
+node_modules/
+package-lock.json
+
+# --- test output ------------------------------------------------------------
+test/shot-*.png
+test/screenshots/
+*.log
+
+# --- design-process artifacts ------------------------------------------------
+# These stay on disk — they are how the look was chosen and they are worth
+# keeping — but they are not part of the shipped game and would only confuse
+# anyone reading the repo. design-brief.md IS committed: it is the decision
+# record the UI was built against.
+design-*.html
+accent-compare*.html
+*-review.html
+
+# --- OS / editor cruft -------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~

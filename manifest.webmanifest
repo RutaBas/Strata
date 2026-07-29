@@ -1,0 +1,18 @@
+{
+  "name": "STRATA — daily core sample",
+  "short_name": "STRATA",
+  "description": "A daily 7x7 deduction puzzle. Four stones to a line, none touching its equal. The stones that survive today are rotated into tomorrow's board.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e6e0d4",
+  "theme_color": "#b4522a",
+  "categories": ["games", "puzzle"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

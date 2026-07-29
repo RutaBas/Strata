@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#b4522a">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="A daily 7x7 deduction puzzle. The stones that survive today are pre-placed in tomorrow's board.">
+<!-- the three iOS ones -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="STRATA">
+<meta name="mobile-web-app-capable" content="yes">
+<title>STRATA</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============================================================ HOME -->
+<section class="screen" id="screen-home">
+  <div class="core-bg" aria-hidden="true"></div>
+  <div class="veil" aria-hidden="true"></div>
+  <div class="pad">
+    <div class="brandline" id="home-date">Core log</div>
+    <h1 class="title">STRATA</h1>
+    <p class="tagline">Four stones to a line. None touching its equal.</p>
+
+    <div class="chainbar">
+      <div>
+        <div class="n" id="chain-n">0</div>
+        <div class="lab" id="chain-lab">day chain</div>
+      </div>
+      <div class="pips" id="chain-pips"></div>
+    </div>
+    <div class="streakline" id="streak-line"></div>
+
+    <button class="btn primary" id="btn-continue" type="button" hidden></button>
+
+    <div class="tiers" id="tier-list"></div>
+
+    <div class="foot" id="home-foot">today's core is yours alone</div>
+    <div class="homebar">
+      <button class="linkbtn" id="btn-tutor" type="button">Lesson</button>
+      <button class="linkbtn" id="btn-settings" type="button">Settings</button>
+      <button class="linkbtn" id="btn-records" type="button">Records</button>
+      <button class="linkbtn" id="btn-calendar" type="button">Calendar</button>
+      <button class="linkbtn" id="btn-lineage" type="button">Lineage</button>
+    </div>
+  </div>
+</section>
+
+<!-- ========================================================= DRILLING -->
+<section class="screen" id="screen-drill" hidden>
+  <div class="pad drillpad">
+    <div class="brandline" id="drill-tier">drilling</div>
+    <div class="drillrig" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <div class="plain" id="drill-msg">Drilling&hellip;</div>
+    <p class="plainsub">Cutting a core that has exactly one reading.</p>
+    <button class="btn ghost" id="btn-drill-cancel" type="button">Cancel</button>
+  </div>
+</section>
+
+<!-- ============================================================= PLAY -->
+<section class="screen" id="screen-play" hidden>
+  <div class="pad boardpad">
+    <div class="hud">
+      <span class="big" id="hud-time">0:00</span>
+      <span id="hud-moves">0 moves</span>
+      <span class="spacer"></span>
+      <span id="hud-tier">TOPSOIL</span>
+    </div>
+    <div class="board" id="board"></div>
+    <div class="pad-keys" id="keypad"></div>
+    <div class="tools">
+      <button class="tool" id="tool-undo" type="button">UNDO</button>
+      <button class="tool" id="tool-hint" type="button">HINT</button>
+      <button class="tool" id="tool-menu" type="button">MENU</button>
+    </div>
+    <!-- The hint. Below the tools, never over the board, so the cell it names
+         stays readable and tappable. It has no timer: it waits for the next
+         move. Tapping anywhere on it dismisses it. -->
+    <button class="hintbar" id="hintbar" type="button" hidden>
+      <span class="hb-text" id="hint-text"></span>
+      <i class="hb-x" aria-hidden="true">&times;</i>
+    </button>
+    <div class="foot" id="play-foot">bedrock is locked &middot; ringed in oxide</div>
+  </div>
+</section>
+
+<!-- ==================================================== FIELD LESSON -->
+<!-- The guided tutorial. Never auto-shown, never recorded: see js/tutorial.js -->
+<section class="screen" id="screen-tutor" hidden>
+  <div class="pad tutorpad">
+    <div class="tutorhead">
+      <span class="brandline" id="tutor-tag">field lesson</span>
+      <span class="brandline" id="tutor-count">1 / 14</span>
+      <!-- leaving, not skipping ahead: this is the way out from every step -->
+      <button class="linkbtn leavebtn" id="tutor-skip" type="button"
+              aria-label="Leave the field lesson and go back to the core log">Leave lesson</button>
+    </div>
+    <div class="board" id="tutor-board"></div>
+    <div class="tiers tutorladder" id="tutor-ladder" hidden></div>
+    <div class="mini" id="tutor-mini" hidden></div>
+    <p class="say" id="tutor-say" hidden></p>
+    <div class="pad-keys" id="tutor-keys" hidden></div>
+    <div class="tutorcopy">
+      <div class="tutortitle" id="tutor-title"></div>
+      <p class="say" id="tutor-body"></p>
+      <p class="say tutorfoot" id="tutor-foot" hidden></p>
+      <p class="nudge replay" id="tutor-replay" hidden>You have cut a core before — Next is live on
+        every step. Play it anyway, or press Next and watch it land.</p>
+      <p class="nudge" id="tutor-nudge" hidden></p>
+    </div>
+    <div class="tutorbar">
+      <button class="btn ghost" id="tutor-back" type="button">Back</button>
+      <button class="btn primary" id="tutor-next" type="button">Next</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================== WIN -->
+<section class="screen" id="screen-win" hidden>
+  <div class="pad scroll">
+    <div class="stamp" id="win-stamp">Core recovered</div>
+    <div class="wintitle">SOLVED</div>
+    <div class="stones" id="win-stones"></div>
+    <p class="say" id="win-say"></p>
+    <div class="rankbadge" id="win-rank" hidden></div>
+    <div class="stats" id="win-stats"></div>
+    <div class="brandline" id="surv-head">survival</div>
+    <div class="mini" id="surv-board"></div>
+    <p class="say" id="surv-say"></p>
+    <button class="btn ghost" id="btn-share-summary" type="button">Share the result</button>
+    <button class="btn primary" id="btn-to-seed" type="button">Choose your seed stone</button>
+  </div>
+</section>
+
+<!-- ============================================================= SEED -->
+<section class="screen" id="screen-seed" hidden>
+  <div class="pad scroll">
+    <div class="brandline">seed</div>
+    <div class="wintitle small">ONE MORE STONE</div>
+    <p class="say">Pick any stone on the board. It comes with you tomorrow whether it earned it or not.
+      This is the only part of the chain you choose.</p>
+    <div class="mini" id="seed-board"></div>
+    <p class="say" id="seed-say">Nothing chosen yet.</p>
+    <div class="brandline" id="rot-head">tomorrow's bedrock &middot; rotated 90&deg; clockwise</div>
+    <div class="mini" id="rot-board"></div>
+    <button class="btn primary" id="btn-set-stone" type="button" disabled>Set the stone</button>
+  </div>
+</section>
+
+<!-- ====================================================== CHAIN BREAK -->
+<section class="screen" id="screen-break" hidden>
+  <div class="pad centred">
+    <div class="fault"></div>
+    <div class="plain" id="break-msg">Chain broken at 0.<br>Starting again.</div>
+    <p class="plainsub" id="break-sub"></p>
+    <p class="plainsub" id="break-longest"></p>
+    <div class="fault spaced"></div>
+    <button class="btn primary" id="btn-break-on" type="button">Today's board is ready</button>
+    <div class="foot">the puzzle is never withheld</div>
+  </div>
+</section>
+
+<!-- ========================================================== RECORDS -->
+<section class="screen" id="screen-records" hidden>
+  <div class="pad scroll">
+    <div class="brandline">core log</div>
+    <div class="wintitle small">RECORDS</div>
+    <div class="stats" id="rec-top"></div>
+    <div class="recrows" id="rec-rows"></div>
+    <button class="btn ghost" id="btn-rec-back" type="button">Back</button>
+  </div>
+</section>
+
+<!-- ========================================================= CALENDAR -->
+<section class="screen" id="screen-calendar" hidden>
+  <div class="pad scroll">
+    <div class="brandline">daily</div>
+    <div class="calhead">
+      <button class="calnav" id="cal-prev" type="button" aria-label="previous month">&#8592;</button>
+      <div class="caltitle" id="cal-title"></div>
+      <button class="calnav" id="cal-next" type="button" aria-label="next month">&#8594;</button>
+    </div>
+    <div class="calgrid" id="cal-grid"></div>
+    <p class="say" id="cal-say"></p>
+    <button class="btn ghost" id="btn-cal-back" type="button">Back</button>
+  </div>
+</section>
+
+<!-- ========================================================== LINEAGE -->
+<section class="screen" id="screen-lineage" hidden>
+  <div class="pad scroll">
+    <div class="brandline">lineage</div>
+    <div class="wintitle small">THE CORE</div>
+    <p class="say" id="lin-say"></p>
+    <div class="lin-col" id="lin-col"></div>
+    <div class="lin-legend" id="lin-legend"></div>
+    <button class="btn primary" id="btn-lin-share" type="button">Share the core sample</button>
+    <button class="btn ghost" id="btn-lin-back" type="button">Back</button>
+  </div>
+</section>
+
+<!-- =========================================================== SHEETS -->
+<div class="sheetwrap" id="sheet-menu" hidden>
+  <div class="scrim" data-close="1"></div>
+  <div class="sheet">
+    <div class="brandline">menu</div>
+    <button class="btn ghost" id="mn-resume" type="button">Resume</button>
+    <button class="btn ghost" id="mn-restart" type="button">Restart this board</button>
+    <button class="btn ghost" id="mn-clear" type="button">Clear my stones</button>
+    <button class="btn ghost" id="mn-howto" type="button">How to play</button>
+    <button class="btn ghost" id="mn-tutor" type="button">Field lesson</button>
+    <button class="btn ghost" id="mn-settings" type="button">Settings</button>
+    <button class="btn ghost" id="mn-home" type="button">Back to the core log</button>
+  </div>
+</div>
+
+<div class="sheetwrap" id="sheet-settings" hidden>
+  <div class="scrim" data-close="1"></div>
+  <div class="sheet">
+    <div class="brandline">settings</div>
+    <button class="toggle" id="set-sound" type="button" aria-pressed="true"><span>Sound</span><i></i></button>
+    <button class="toggle" id="set-haptics" type="button" aria-pressed="true"><span>Haptics</span><i></i></button>
+    <button class="toggle" id="set-dark" type="button" aria-pressed="false"><span>Dark mode</span><i></i></button>
+    <button class="btn ghost" id="set-close" type="button">Done</button>
+  </div>
+</div>
+
+<div class="sheetwrap" id="sheet-replay" hidden>
+  <div class="scrim" data-close="1"></div>
+  <div class="sheet">
+    <div class="brandline" id="replay-head">replay</div>
+    <p class="say">Replaying a past day is free play: it never touches the chain.</p>
+    <div class="tiers" id="replay-tiers"></div>
+    <button class="btn ghost" id="replay-cancel" type="button">Cancel</button>
+  </div>
+</div>
+
+<div class="sheetwrap" id="sheet-howto" hidden>
+  <div class="scrim" data-close="1"></div>
+  <div class="sheet">
+    <div class="brandline">how to play</div>
+    <div class="wintitle small">THREE RULES</div>
+    <ol class="rules">
+      <li><b>Four stones to a line.</b> Every row and every column holds exactly four
+        stones and three empties.<span class="ruleart" data-art="count"></span></li>
+      <li><b>None touching its equal.</b> No two stones side by side may share a weight.
+        <span class="ruleart" data-art="repel"></span></li>
+      <li><b>The edge numbers are the sum.</b> Each clue is the total weight of its line.
+        <span class="ruleart" data-art="sum"></span></li>
+    </ol>
+    <p class="say">Bedrock stones — ringed in oxide, with an age — came from the boards you
+      already solved. They are locked.</p>
+    <button class="btn primary" id="howto-go" type="button">Start drilling</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<!-- the verified logic core, in dependency order — see js/logic.js -->
+<script src="js/model.js"></script>
+<script src="js/rng.js"></script>
+<script src="js/solver.js"></script>
+<script src="js/generator.js"></script>
+<script src="js/logic.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/game.js"></script>
+<script src="js/lineage.js"></script>
+<!-- the field lesson: needs game.js for its board instance, and is driven by ui.js -->
+<script src="js/tutorial.js"></script>
+<!-- shared meta-layer, vendored by games/_shared/sync.js — never edit js/meta/ -->
+<script src="js/meta/store.js"></script>
+<script src="js/meta/rng.js"></script>
+<script src="js/meta/progress.js"></script>
+<script src="js/meta/daily.js"></script>
+<script src="js/meta/records.js"></script>
+<script src="js/meta/rank.js"></script>
+<script src="js/meta/index.js"></script>
+<script src="js/par.js"></script>
+<script src="js/meta-config.js"></script>
+<script src="js/meta-ui.js"></script>
+<script src="js/ui.js"></script>
+<script>
+  /* Offline play. Registration is deliberately last and failure is silent —
+     service workers are unavailable from file://, and the game must still run
+     when you simply open index.html. */
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>
