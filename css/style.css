@@ -145,8 +145,18 @@ body.dark .veil{background:linear-gradient(180deg,
   box-shadow:inset 0 -2px 0 rgba(0,0,0,.10);position:relative;cursor:pointer;
   transition:background-color var(--snap),box-shadow var(--snap),transform var(--snap);}
 .cell.blank{color:rgba(36,31,25,.22);font-size:13px;}
-.cell.dot{color:rgba(36,31,25,.55);}
-body.dark .cell.dot{color:rgba(236,229,215,.5);}
+/* THE EMPTY MARK. A × at 20px on the 50px board cell, at 55% ink — heavier
+   than the old middle dot so an empty reads as a decision from arm's length,
+   and still lighter than any stone numeral (600 weight, full ink) so the
+   stones keep the foreground. Every smaller surface scales the glyph by the
+   same ratio it scales its numerals by (20/16 of the cell's font-size), so it
+   looks like the same mark everywhere instead of a literal 20px in a 22px box:
+     board / lesson board   16px numeral  ->  20px ×
+     mini boards            13px numeral  ->  16px ×
+     how-to rule art        11px numeral  ->  14px ×
+     keypad erase key       17px numeral  ->  20px ×  (a tap target, not a cell) */
+.cell.empty{color:rgba(36,31,25,.55);font-size:20px;line-height:1;font-weight:400;}
+body.dark .cell.empty{color:rgba(236,229,215,.55);}
 .cell.w1{background:var(--w1);} .cell.w2{background:var(--w2);} .cell.w3{background:var(--w3);}
 .cell.w4{background:var(--w4);color:var(--stone-ink-deep);}
 .cell.w5{background:var(--w5);color:var(--stone-ink-deep);}
@@ -157,6 +167,19 @@ body.dark .cell.dot{color:rgba(236,229,215,.5);}
 .cell.pick{box-shadow:inset 0 0 0 3px var(--accent),0 0 0 5px rgba(180,82,42,.25);}
 .cell:active{transform:scale(.94);}
 .age{position:absolute;top:3px;right:4px;font-size:8.5px;font-family:var(--mono);opacity:.85;}
+
+/* ------------------------------------------------------------ pencil notes
+   A CLUSTER on the BOTTOM STRIP: only the candidates still standing, in
+   ascending order, along the bottom edge. The top of the cell stays clear, and
+   notes are only ever drawn on an undecided cell, so the cluster can never
+   crowd a placed numeral. 11px mono is 6.6px per digit, so the worst case
+   "12345" measures 34px inside a 50px cell with 3px of air either side.
+   Colour is --dim, the same secondary ink as a clue numeral — audited against
+   the empty-cell panel in scripts/contrast.js (4.54:1 light, 5.29:1 dark). */
+.cell .notes{position:absolute;left:3px;right:3px;bottom:3px;
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;
+  line-height:1;text-align:center;color:var(--dim);pointer-events:none;}
+.cell.noted{font-size:0;}     /* the "?" gives way to the cluster */
 
 .cell.press{animation:press 120ms ease-out;}
 @keyframes press{50%{transform:scale(.9);}}
@@ -183,14 +206,22 @@ body.dark .cell.dot{color:rgba(236,229,215,.5);}
   color:var(--stone-ink);cursor:pointer;transition:transform var(--snap),box-shadow var(--snap);}
 .key:active{transform:translateY(2px);}
 .key.k4,.key.k5{color:var(--stone-ink-deep);}
-.key.kerase{background:var(--panel);color:var(--dim);}
+.key.kerase{background:var(--panel);color:var(--dim);font-size:20px;line-height:1;font-weight:400;}
 .key.armed{box-shadow:inset 0 0 0 3px var(--accent),0 3px 0 var(--accent-dark);transform:translateY(-2px);}
+/* while notes are on, the erase key has nothing to toggle and looks it — it
+   still answers a tap, with a sentence, rather than doing nothing silently */
+.pad-keys.noting .key.kerase{opacity:.45;}
 .tools{display:flex;gap:var(--s2);margin-top:var(--s2);}
 .tool{flex:1;min-height:48px;border:0;border-radius:10px;background:var(--panel);display:flex;align-items:center;
   justify-content:center;font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;color:var(--ink);
   box-shadow:inset 0 -2px 0 var(--press);cursor:pointer;transition:transform var(--snap);}
 .tool:active{transform:translateY(2px);}
 .tool[disabled]{opacity:.45;}
+/* NOTES, lit. The one place a mode is held open in this game, so it is the
+   loudest thing in the tools row while it is on and completely quiet when it
+   is off — the player can never be unsure which mode they are in. */
+.tool.on{background:var(--accent);color:var(--accent-ink-aa);font-weight:600;
+  box-shadow:inset 0 -2px 0 var(--accent-dark);}
 
 /* ---------------------------------------------------------------- win */
 .stamp{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.3em;text-transform:uppercase;
@@ -209,6 +240,11 @@ body.dark .cell.dot{color:rgba(236,229,215,.5);}
 .say b{color:var(--ink);font-weight:600;}
 .mini{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:var(--s2) 0 var(--s3);}
 .mini .cell{font-size:13px;border-radius:5px;}
+.mini .cell.empty{font-size:16px;}   /* the × scaled with the mini's numerals */
+/* Undrilled ground on the rotation preview — no mark, because nobody has
+   decided anything about these cells yet. Sits a shade under the empty cell so
+   the few bedrock stones carry the whole screen. */
+.mini .cell.ground{background:var(--panel-2);opacity:.55;box-shadow:none;}
 .mini.pickable .cell{cursor:pointer;}
 
 /* ------------------------------------------------------------- records */
@@ -309,7 +345,7 @@ body.dark .cell.dot{color:rgba(236,229,215,.5);}
 .ruleart span{width:22px;height:22px;border-radius:4px;font-family:var(--mono);font-size:11px;
   font-weight:600;display:flex;align-items:center;justify-content:center;color:var(--stone-ink);
   box-shadow:inset 0 -2px 0 rgba(0,0,0,.12);}
-.ruleart span.empty{background:var(--panel-2);color:var(--dim);}
+.ruleart span.empty{background:var(--panel-2);color:var(--dim);font-size:14px;font-weight:400;}
 .ruleart span.bad{box-shadow:inset 0 0 0 2px var(--accent);}
 .ruleart span.clue{background:transparent;box-shadow:none;color:var(--moss-ink);}
 

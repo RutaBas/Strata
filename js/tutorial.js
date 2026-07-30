@@ -239,16 +239,18 @@ var STEPS = [
     key: "do-density", mode: "play", tag: "your turn",
     title: "Count first",
     body: "Row 1 already shows four stones, and its load of <b>6</b> is already met. " +
-          "So nothing can settle in the ringed cell. Arm the <b>·</b> key and mark it empty.",
+          "So nothing can settle in the ringed cell. Arm the <b>×</b> key and mark it empty.",
     target: function () { return [CELL.dens]; },
-    nudge: "The · key, at the right of the keypad, is how you say “empty”."
+    nudge: "The × key, at the right of the keypad, is how you say “empty”."
   },
   {
     key: "do-repel", mode: "play", tag: "your turn",
     title: "Let the neighbours decide",
     body: "Row 2's load is <b>12</b> and you can see a 4 and a 5, so the two ringed cells hold " +
           "3 between them: a 1 and a 2. The arithmetic cannot tell you which way round. " +
-          "Look up and down instead — start with the left one.",
+          "Look up and down instead — start with the left one. " +
+          "(On a real board, <b>NOTES</b> in the tools row pencils possibilities like these " +
+          "into a cell until you can prove one.)",
     target: function () { return CELL.rep; },
     nudge: "A 2 in the left cell would have a 2 above it and a 2 below it. So it is the 1.",
     after: {
@@ -527,7 +529,7 @@ function tapCell(i, node) {
   if (armed === null) {
     api.flash(node, "shake", 200);
     api.sound.play("invalid");
-    say("Arm a weight on the keypad first — or the · key for an empty.");
+    say("Arm a weight on the keypad first — or the × key for an empty.");
     return;
   }
 

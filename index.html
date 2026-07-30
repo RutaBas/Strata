@@ -81,6 +81,8 @@
     <div class="pad-keys" id="keypad"></div>
     <div class="tools">
       <button class="tool" id="tool-undo" type="button">UNDO</button>
+      <!-- pencil notes: lit in oxide while on, so the mode is never in doubt -->
+      <button class="tool" id="tool-notes" type="button" aria-pressed="false">NOTES</button>
       <button class="tool" id="tool-hint" type="button">HINT</button>
       <button class="tool" id="tool-menu" type="button">MENU</button>
     </div>
@@ -261,6 +263,8 @@
     </ol>
     <p class="say">Bedrock stones — ringed in oxide, with an age — came from the boards you
       already solved. They are locked.</p>
+    <p class="say">A cell you have ruled out takes an <b>&times;</b>. Not sure yet? <b>NOTES</b>
+      pencils the weights that are still possible along the bottom of a cell.</p>
     <button class="btn primary" id="howto-go" type="button">Start drilling</button>
   </div>
 </div>

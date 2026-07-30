@@ -10,7 +10,11 @@
    Bump CACHE_VERSION whenever any listed file changes; the activate handler
    deletes every cache that is not the current one. */
 
-var CACHE_VERSION = "strata-v4";
+/* v5 — the empty mark became a × and pencil notes arrived, which changed
+   index.html, css/style.css, js/ui.js, js/game.js and js/tutorial.js. Without
+   this bump an already-installed player would keep the v4 shell and never see
+   either change. */
+var CACHE_VERSION = "strata-v6";
 
 var PRECACHE = [
   "./",

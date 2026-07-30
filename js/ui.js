@@ -13,6 +13,7 @@ var UI = (function () {
   var chain = null;
   var today = null;
   var armed = null;  // weight armed on the keypad, or null for cycle mode
+  var notesMode = false;   // the NOTES key: weights pencil instead of place
   var tickTimer = null;
   var recorded = false;
   var solvedInfo = null;
@@ -26,6 +27,12 @@ var UI = (function () {
     if (text !== undefined) e.textContent = text;
     return e;
   };
+
+  /* The empty-cell mark. ONE constant and ONE class, so the play board, the
+     win and survival minis, the seed and rotation minis, the field lesson's
+     board and the keypad's erase key can never drift apart. The size is set
+     per surface in css/style.css (.cell.empty), not here. */
+  var EMPTY_MARK = "×";
 
   var SCREENS = ["home", "drill", "play", "win", "seed", "break", "records", "lineage", "calendar", "tutor"];
   var hintIndex = null;   // the cell the live hint names, or null
@@ -315,9 +322,7 @@ var UI = (function () {
     var tier = M.tierByKey(G.state.tier);
     $("hud-tier").textContent = (tier ? tier.name : G.state.tier).toUpperCase() +
       (G.state.isDaily ? "" : " · FREE");
-    $("play-foot").textContent = G.state.bedrock.length
-      ? "bedrock is locked · ringed in oxide"
-      : "givens are locked · four stones to a line";
+    setNotesMode(false);   // every board opens in stone mode, never mid-pencil
     buildKeypad();
     renderBoard();
     updateHUD();
@@ -356,7 +361,7 @@ var UI = (function () {
         host.appendChild(k);
       })(w);
     }
-    var e = el("button", "key kerase", "·");
+    var e = el("button", "key kerase", EMPTY_MARK);
     e.type = "button";
     e.setAttribute("aria-label", "mark empty / erase");
     e.addEventListener("click", function () { onPick(0); });
@@ -376,11 +381,77 @@ var UI = (function () {
   function buildKeypad() { makeKeypad($("keypad"), armedIs, arm); }
 
   function arm(w) {
+    /* In notes mode the erase key has nothing to toggle: an × is a decision,
+       not a candidate. Say so rather than doing nothing. */
+    if (notesMode && w === 0) {
+      Sound.play("invalid");
+      toast("An × is a decision, not a note — switch NOTES off to mark a cell empty.");
+      return;
+    }
     armed = (armed === w) ? null : w;
     paintArmed();
   }
 
   function paintArmed() { paintKeypad($("keypad"), armedIs); }
+
+  /* ------------------------------------------------------------ the notes
+     One mode flag, lit on the tools row, and it changes exactly one thing:
+     what a tap on a cell does with the armed weight. Everything the notes
+     touch lives in game.js; nothing here decides what a note means. */
+  function setNotesMode(on) {
+    notesMode = !!on;
+    var key = $("tool-notes");
+    key.classList.toggle("on", notesMode);
+    key.setAttribute("aria-pressed", notesMode ? "true" : "false");
+    $("keypad").classList.toggle("noting", notesMode);
+    // the erase key is inert while pencilling, and looks it
+    $("play-foot").dataset.notes = notesMode ? "1" : "";
+    if (notesMode) armed = armed === 0 ? null : armed;
+    paintArmed();
+    setFoot();
+  }
+
+  function toggleNotesMode() {
+    setNotesMode(!notesMode);
+    Sound.play(notesMode ? "line" : "place");
+    toast(notesMode
+      ? "Notes on. Arm a weight, then tap a cell to pencil it in or out."
+      : "Notes off. Weights place stones again.");
+  }
+
+  function setFoot() {
+    if (notesMode) {
+      $("play-foot").textContent = "notes mode · pencilling candidates, not stones";
+      return;
+    }
+    $("play-foot").textContent = G && G.state.bedrock.length
+      ? "bedrock is locked · ringed in oxide"
+      : "givens are locked · four stones to a line";
+  }
+
+  function pencil(i, node) {
+    if (armed === null || armed === 0) {
+      flash(node, "shake", 200);
+      Sound.play("invalid");
+      toast("Arm a weight first — in notes mode a tap pencils it in.");
+      return;
+    }
+    var res = G.toggleNote(i, armed);
+    if (!res.ok) {
+      flash(node, "shake", 200);
+      Sound.play("invalid");
+      toast(res.code === "decided"
+        ? "That cell is already decided. Clear it to pencil in it."
+        : refuseText(res.code));
+      return;
+    }
+    /* A note is not a move: no move counter, no mistake, no win check, and no
+       reason to dismiss a hint the player has not acted on yet. */
+    paintCell(node, i, G.state.board[i]);
+    flash(node, "press", 130);
+    Sound.play("place");
+    saveNow();
+  }
 
   /* The board is a component too. Everything below takes the game instance it
      is drawing, so the field lesson renders its fixed board through exactly
@@ -421,9 +492,18 @@ var UI = (function () {
     if (v === M.UNKNOWN) {
       node.classList.add("blank");
       node.textContent = "?";
+      /* Pencil notes, on an undecided cell only — a cluster of the surviving
+         candidates along the bottom edge, so the top of the cell stays clear
+         and a numeral can never share the space with them. */
+      var notes = g.notesAt ? g.notesAt(i) : [];
+      if (notes.length) {
+        node.textContent = "";
+        node.classList.add("noted");
+        node.appendChild(el("span", "notes", notes.join("")));
+      }
     } else if (v === 0) {
-      node.classList.add("dot");
-      node.textContent = "·";
+      node.classList.add("empty");
+      node.textContent = EMPTY_MARK;
     } else {
       node.classList.add("w" + v);
       node.textContent = String(v);
@@ -438,8 +518,10 @@ var UI = (function () {
       node.classList.add("given");
       node.setAttribute("aria-label", "given " + (v > 0 ? "weight " + v : "empty") + ", locked");
     } else {
+      var pencilled = v === M.UNKNOWN && g.notesAt ? g.notesAt(i) : [];
       node.setAttribute("aria-label", "row " + (M.rowOf(i) + 1) + " column " + (M.colOf(i) + 1) +
-        ", " + (v === M.UNKNOWN ? "open" : v === 0 ? "empty" : "weight " + v));
+        ", " + (v === M.UNKNOWN ? "open" : v === 0 ? "empty" : "weight " + v) +
+        (pencilled.length ? ", pencilled " + pencilled.join(" ") : ""));
     }
   }
 
@@ -463,6 +545,7 @@ var UI = (function () {
       toast(G.isBedrock(i) ? "Bedrock is weight-locked — it came with you." : "That stone was given.");
       return;
     }
+    if (notesMode) { pencil(i, node); return; }
     var want = armed === null ? nextInCycle(i) : armed;
     if (want === null) { flash(node, "shake", 200); Sound.play("invalid"); return; }
     apply(i, want, node);
@@ -537,7 +620,8 @@ var UI = (function () {
     if (!G || G.state.phase !== "playing") return;
     var r = G.undo();
     if (!r.ok) return;
-    clearHint();
+    // undoing a note is not acting on a hint, so the hint stays up
+    if (r.kind !== "note") clearHint();
     paintCell(cellAt(r.index), r.index, G.state.board[r.index]);
     flash(cellAt(r.index), "press", 130);
     repaintClues();
@@ -709,7 +793,7 @@ var UI = (function () {
     for (var i = 0; i < M.CELLS; i++) {
       var v = grid[i];
       var n = el("div", "cell");
-      if (v === 0) { n.classList.add("dot"); n.textContent = "·"; }
+      if (v === 0) { n.classList.add("empty"); n.textContent = EMPTY_MARK; }
       else { n.classList.add("w" + v); n.textContent = String(v); }
       wrap.appendChild(n);
       nodes.push(n);
@@ -763,7 +847,7 @@ var UI = (function () {
       (function (i) {
         var v = grid[i];
         var n = el("div", "cell");
-        if (v === 0) { n.classList.add("dot"); n.textContent = "·"; }
+        if (v === 0) { n.classList.add("empty"); n.textContent = EMPTY_MARK; }
         else {
           n.classList.add("w" + v);
           n.textContent = String(v);
@@ -786,7 +870,12 @@ var UI = (function () {
     for (var i = 0; i < M.CELLS; i++) {
       var b = keep[i] || gone[i];
       var n = el("div", "cell");
-      if (!b) { n.classList.add("dot"); n.textContent = "·"; }
+      // No mark here. On every other board an empty cell is a decision the
+      // player made, and the x says so. This board is tomorrow's ground before
+      // it has been drilled — the blank cells are simply "no bedrock", not
+      // "known to be empty", and 44 crosses would say something untrue as well
+      // as drowning the four stones the screen exists to show.
+      if (!b) { n.classList.add("ground"); }
       else {
         n.classList.add("w" + b.w, "bed");
         n.textContent = String(b.w);
@@ -1019,10 +1108,11 @@ var UI = (function () {
   }
 
   function openHowTo() {
+    var X = EMPTY_MARK;
     var art = {
-      count: [["w2", "2"], ["w4", "4"], ["empty", "·"], ["w1", "1"], ["empty", "·"], ["w5", "5"], ["empty", "·"]],
-      repel: [["w3", "3"], ["w3 bad", "3"], ["empty", "·"], ["w3", "3"], ["w1", "1"], ["w3", "3"], ["empty", "·"]],
-      sum: [["clue", "12"], ["w2", "2"], ["w4", "4"], ["empty", "·"], ["w1", "1"], ["w5", "5"], ["empty", "·"]]
+      count: [["w2", "2"], ["w4", "4"], ["empty", X], ["w1", "1"], ["empty", X], ["w5", "5"], ["empty", X]],
+      repel: [["w3", "3"], ["w3 bad", "3"], ["empty", X], ["w3", "3"], ["w1", "1"], ["w3", "3"], ["empty", X]],
+      sum: [["clue", "12"], ["w2", "2"], ["w4", "4"], ["empty", X], ["w1", "1"], ["w5", "5"], ["empty", X]]
     };
     Array.prototype.forEach.call(document.querySelectorAll(".ruleart"), function (host) {
       host.innerHTML = "";
@@ -1147,6 +1237,7 @@ var UI = (function () {
     $("howto-go").addEventListener("click", function () { sheet("sheet-howto", false); });
     $("btn-break-on").addEventListener("click", goHome);
     $("tool-undo").addEventListener("click", doUndo);
+    $("tool-notes").addEventListener("click", toggleNotesMode);
     $("tool-hint").addEventListener("click", doHint);
     $("tool-menu").addEventListener("click", function () { sheet("sheet-menu", true); });
     $("btn-set-stone").addEventListener("click", setStone);
@@ -1192,6 +1283,7 @@ var UI = (function () {
       if (e.key >= "1" && e.key <= "5") arm(parseInt(e.key, 10));
       else if (e.key === "0" || e.key === ".") arm(0);
       else if (e.key === "u") doUndo();
+      else if (e.key === "n") toggleNotesMode();
       else if (e.key === "h") doHint();
       else if (e.key === "Escape") arm(armed);
     });

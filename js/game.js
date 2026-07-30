@@ -47,7 +47,15 @@
       elapsedMs: 0,
       runningSince: null,
       undoStack: [],
-      seedIndex: null
+      seedIndex: null,
+      /* PENCIL NOTES. idx -> a 5-bit mask, bit (w-1) set when weight w is
+         pencilled in. They are the PLAYER'S, not the solver's: never
+         auto-filled, never auto-pruned when a neighbour is placed, never
+         checked for correctness. Nothing that reads the board reads this —
+         isSolved(), refusal(), lineState(), hint(), survivorSet() and the
+         snapshot's `board` are all identical whether or not notes exist.
+         A wrong note is not a mistake and toggling one is not a move. */
+      notes: {}
     };
 
     // ------------------------------------------------------------- helpers
@@ -79,6 +87,7 @@
       g.elapsedMs = 0; g.runningSince = null;
       g.undoStack = [];
       g.seedIndex = null;
+      g.notes = {};
       startClock();
       return g;
     }
@@ -133,6 +142,47 @@
       return null;
     }
 
+    // --------------------------------------------------------- pencil notes
+    /* The whole of the notes feature. Deliberately nothing else in this file
+       calls notesAt() — the notes are a layer over the board, never part of
+       it. See the comment on g.notes. */
+    function noteBit(w) { return 1 << (w - 1); }
+
+    function notesAt(i) {
+      var m = g.notes[i] || 0, o = [];
+      for (var w = 1; w <= 5; w++) if (m & noteBit(w)) o.push(w);
+      return o;                      // always ascending
+    }
+
+    function hasNote(i, w) { return !!((g.notes[i] || 0) & noteBit(w)); }
+
+    function noteCount() {
+      var n = 0;
+      for (var k in g.notes) if (g.notes[k]) n++;
+      return n;
+    }
+
+    /* Toggle candidate `w` in cell `i`. Weights 1-5 only: there is no
+       "could be empty" note, because the × is a decision, not a note.
+       Costs no move, can never be a mistake, and is undoable. */
+    function toggleNote(i, w) {
+      if (g.phase !== "playing") return { ok: false, code: "not-playing" };
+      if (!(w >= 1 && w <= 5)) return { ok: false, code: "not-a-note" };
+      if (isLocked(i)) return { ok: false, code: isBedrock(i) ? "bedrock" : "given" };
+      if (g.board[i] !== UNKNOWN) return { ok: false, code: "decided" };
+      var prev = g.notes[i] || 0;
+      g.undoStack.push({ kind: "note", i: i, notes: prev });
+      var next = prev ^ noteBit(w);
+      if (next) g.notes[i] = next; else delete g.notes[i];
+      // moves and mistakes are deliberately untouched
+      return { ok: true, code: "noted", on: !!(next & noteBit(w)), notes: notesAt(i) };
+    }
+
+    function clearNotes(i) {
+      if (g.notes[i]) { delete g.notes[i]; return true; }
+      return false;
+    }
+
     function rowCells(r) { var o = []; for (var c = 0; c < N; c++) o.push(M.idx(r, c)); return o; }
     function colCells(c) { var o = []; for (var r = 0; r < N; r++) o.push(M.idx(r, c)); return o; }
 
@@ -153,8 +203,14 @@
       }
 
       var before = lineFlags();
-      g.undoStack.push({ i: i, prev: g.board[i], moves: g.moves, mistakes: g.mistakes });
+      /* The cell's notes ride on the undo entry: deciding a cell clears its
+         notes, and undoing that decision brings them back exactly. */
+      g.undoStack.push({
+        kind: "place", i: i, prev: g.board[i],
+        moves: g.moves, mistakes: g.mistakes, notes: g.notes[i] || 0
+      });
       g.board[i] = v;
+      if (v !== UNKNOWN) clearNotes(i);   // a stone or an × ends the guessing
       g.moves += 1;
       var mistake = false;
       if (v !== UNKNOWN && v !== g.solution[i]) { g.mistakes += 1; mistake = true; }
@@ -172,18 +228,28 @@
 
     function erase(i) { return place(i, UNKNOWN); }
 
+    /* One stack, two kinds of entry. A save written before notes existed has
+       entries with no `kind`, which are placements — hence the !== "note"
+       test rather than === "place". */
     function undo() {
       if (!g.undoStack.length) return { ok: false };
       var u = g.undoStack.pop();
+      if (u.kind === "note") {
+        if (u.notes) g.notes[u.i] = u.notes; else delete g.notes[u.i];
+        return { ok: true, index: u.i, kind: "note" };
+      }
       g.board[u.i] = u.prev;
       g.moves = u.moves;
       g.mistakes = u.mistakes;
-      return { ok: true, index: u.i };
+      if (u.notes) g.notes[u.i] = u.notes; else delete g.notes[u.i];
+      return { ok: true, index: u.i, kind: "place" };
     }
 
-    /* Clear every cell the player put down; givens and bedrock stay. */
+    /* Clear every cell the player put down; givens and bedrock stay. The
+       notes go with them — they were working-out for stones that are gone. */
     function clearBoard() {
       for (var i = 0; i < CELLS; i++) if (g.givens[i] === UNKNOWN) g.board[i] = UNKNOWN;
+      g.notes = {};
       g.undoStack = [];
       return true;
     }
@@ -279,9 +345,31 @@
     }
 
     // ------------------------------------------------------------- persist
+    /* The save format is EXTENDED, not versioned up: `notes` is an optional
+       field and `v` stays 1, so a save written before pencil notes existed
+       still restores — it simply arrives with no notes. */
+    function notesOut() {
+      var o = {};
+      for (var k in g.notes) if (g.notes[k]) o[k] = g.notes[k];
+      return o;
+    }
+
+    function notesIn(raw) {
+      var o = {};
+      if (!raw || typeof raw !== "object") return o;
+      for (var k in raw) {
+        var i = Number(k), m = Number(raw[k]);
+        if (!(i >= 0 && i < CELLS)) continue;
+        m = m & 31;                                  // weights 1-5, nothing else
+        if (m) o[i] = m;
+      }
+      return o;
+    }
+
     function snapshot() {
       return {
         v: 1,
+        notes: notesOut(),
         tier: g.tier, isDaily: g.isDaily, dateKey: g.dateKey, seed: g.seed,
         clues: { rows: g.clues.rows.slice(), cols: g.clues.cols.slice() },
         givens: toArray(g.givens),
@@ -310,6 +398,7 @@
       g.elapsedMs = s.elapsedMs || 0;
       g.runningSince = null;
       g.undoStack = s.undo || [];
+      g.notes = notesIn(s.notes);      // absent in a pre-notes save: no throw
       g.seedIndex = s.seedIndex === undefined ? null : s.seedIndex;
       g.phase = s.phase || "playing";
       return true;
@@ -321,6 +410,8 @@
       puzzle: puzzle,
       place: place, erase: erase, undo: undo, clearBoard: clearBoard, restart: restart,
       isLocked: isLocked, isBedrock: isBedrock, refusal: refusal,
+      toggleNote: toggleNote, notesAt: notesAt, hasNote: hasNote,
+      clearNotes: clearNotes, noteCount: noteCount,
       lineState: lineState, isSolved: isSolved,
       hint: hint,
       survivorSet: survivorSet, previewNext: previewNext,

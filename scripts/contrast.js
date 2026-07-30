@@ -28,6 +28,15 @@ const W = ["#d6c9a8", "#c2ab7d", "#9d8358", "#6b563a", "#3d3226"];
 const STONE_INK = "#241f19";       // weights 1-3
 const STONE_INK_DEEP = "#f2ece0";  // weights 4-5 (the ink flips)
 
+/* The empty mark is a 55%-alpha ink glyph, so what the eye actually sees is
+   the composite over the cell behind it. Flatten it before measuring rather
+   than measuring the token and pretending. */
+function over(fg, bg, alpha) {
+  const px = (h, i) => parseInt(h.substr(i, 2), 16);
+  const mix = (i) => Math.round(alpha * px(fg, i) + (1 - alpha) * px(bg, i));
+  return "#" + [1, 3, 5].map((i) => mix(i).toString(16).padStart(2, "0")).join("");
+}
+
 let fails = 0;
 function row(label, fg, bg, floor) {
   const r = ratio(fg, bg);
@@ -67,7 +76,23 @@ W.forEach((bg, i) => {
   row("lesson ladder footnote on paper", P.dim, P.paper, 4.5);
   row("lesson replay hint on paper", P.mossInk, P.paper, 4.5);
   row("lesson leave control on paper", P.accentStamp, P.paper, 4.5);
+
+  /* The empty mark and the pencil-note cluster.
+     The × is a non-text graphical indicator of state, deliberately held under
+     the stones so 20 of them on a board do not out-shout the content, so it
+     is held to WCAG 1.4.11's 3:1 for non-text contrast — not to 4.5:1, which
+     it would only reach by becoming as loud as a numeral. The note cluster is
+     read as text (digits you must tell apart), so it takes the full 4.5:1.
+     Both floors are stated here so a future nudge to either colour fails
+     loudly against the right bar. */
+  const markInk = name === "LIGHT" ? "#241f19" : "#ece5d7";
+  row("empty mark (x, 55%) on empty cell", over(markInk, P.panel2, 0.55), P.panel2, 3.0);
+  row("empty mark (x, 55%) on keypad panel", over(markInk, P.panel, 0.55), P.panel, 3.0);
+  row("pencil note cluster on empty cell", P.dim, P.panel2, 4.5);
+  row("NOTES key label while lit", P.accentInk, P.accent, 4.5);
 });
 
-console.log("\n" + (fails ? fails + " PAIR(S) BELOW AA" : "all pairs clear WCAG AA 4.5:1"));
+console.log("\n" + (fails
+  ? fails + " PAIR(S) BELOW THEIR FLOOR"
+  : "every pair clears its floor — text at AA 4.5:1, the empty mark at 1.4.11's 3:1"));
 process.exit(fails ? 1 : 0);
