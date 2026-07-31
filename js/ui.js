@@ -545,10 +545,10 @@ var UI = (function () {
     host.appendChild(el("div", "clue"));
     var st = game.lineState();
     for (var c = 0; c < M.N; c++) {
-      host.appendChild(el("div", "clue" + clueClass(st.cols[c]), String(game.state.clues.cols[c])));
+      host.appendChild(clueNode(game.state.clues.cols[c], st.cols[c], "col", c));
     }
     for (var r = 0; r < M.N; r++) {
-      host.appendChild(el("div", "clue" + clueClass(st.rows[r]), String(game.state.clues.rows[r])));
+      host.appendChild(clueNode(game.state.clues.rows[r], st.rows[r], "row", r));
       for (var c2 = 0; c2 < M.N; c2++) {
         host.appendChild(cellNode(M.idx(r, c2), game, onTap));
       }
@@ -557,7 +557,39 @@ var UI = (function () {
 
   function renderBoard() { renderBoardInto($("board"), G, tapCell); }
 
+  /* THE CLUE, AND THE TALLY STRIKE.
+     A finished line gets its load number ruled through — a surveyor ticking an
+     entry off the tally — and the numeral shifts to moss at the same time. Two
+     channels, never one: the strike carries it at arm's length, the colour
+     carries it for anyone who cannot see the hairline.
+
+     The numeral lives in its own <span class="v"> so the rule can be sized to
+     the digits (1- or 2-digit loads both look right) instead of to the gutter
+     cell, and so it never touches layout. "Finished" is game.js's lineState()
+     — four stones, the load met, and no repulsion inside the line — never a
+     second definition written here. */
+  function clueNode(value, m, kind, n) {
+    var node = el("div", "clue");
+    node.appendChild(el("span", "v", String(value)));
+    node.setAttribute("role", "img");
+    paintClue(node, m, kind, n);
+    return node;
+  }
+
   function clueClass(m) { return m.done ? " done" : (m.over ? " over" : ""); }
+
+  function paintClue(node, m, kind, n) {
+    var cls = "clue" + clueClass(m);
+    // only touch className when it actually changes: re-assigning it would
+    // restart the strike sweep on every repaint
+    if (node.className !== cls) node.className = cls;
+    var where = (kind === "row" ? "Row " : "Column ") + (n + 1);
+    node.setAttribute("aria-label", where + ", load " + m.clue + ", " +
+      (m.done ? "complete"
+        : m.over ? "over its load at " + m.sum
+          : m.sum + " of " + m.clue + " placed, " + m.stones + " of " +
+            M.STONES_PER_LINE + " stones"));
+  }
 
   function cellNode(i, game, onTap) {
     var v = game.state.board[i];
@@ -687,8 +719,8 @@ var UI = (function () {
     var st = (game || G).lineState();
     // .clue nodes in document order: corner, 7 column clues, then 7 row clues
     var clues = (host || $("board")).querySelectorAll(".clue");
-    for (var c = 0; c < M.N; c++) clues[c + 1].className = "clue" + clueClass(st.cols[c]);
-    for (var r = 0; r < M.N; r++) clues[1 + M.N + r].className = "clue" + clueClass(st.rows[r]);
+    for (var c = 0; c < M.N; c++) paintClue(clues[c + 1], st.cols[c], "col", c);
+    for (var r = 0; r < M.N; r++) paintClue(clues[1 + M.N + r], st.rows[r], "row", r);
   }
 
   function markLine(l) {

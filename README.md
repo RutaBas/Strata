@@ -138,7 +138,8 @@ scripts/make-icons.js reproducible PNG app icons (no dependencies)
 scripts/contrast.js   WCAG AA audit of every numeral-on-stone pair
 scripts/hint-worstcase.js  longest explanation nextDeduction can emit (layout budget)
 scripts/pick-tutorial-board.js  picks the field lesson's fixed board (run once, by hand)
-test/verify.js        the logic gate — 35 checks
+test/verify.js        the logic gate — 54 checks
+test/dom-shim.js      the headless DOM + app boot the node UI tests drive
 design-brief.md       the signed-off design (palette, type, motion, ladder)
 ```
 
@@ -209,6 +210,7 @@ node games/_shared/meta/test/verify.js    # the shared meta-layer gate
 node test/model.test.js                  # chain / bedrock arithmetic
 node test/notes.test.js                  # pencil notes, and their non-interference
 node test/chain.test.js                  # the day boundary across a PWA resume
+node test/strike.test.js                 # the tally strike on a finished line
 node scripts/contrast.js                 # WCAG AA, exits non-zero on any failure
 node scripts/make-icons.js               # regenerate the app icons
 ```

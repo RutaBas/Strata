@@ -139,6 +139,32 @@ body.dark .veil{background:linear-gradient(180deg,
   color:var(--dim);font-variant-numeric:tabular-nums;transition:color var(--snap);}
 .clue.done{color:var(--moss-ink);}
 .clue.over{color:var(--accent-dark);}
+/* THE TALLY STRIKE. A finished line gets its load ruled through, the way a
+   surveyor ticks an entry off a tally: a 2px rule, currentColor (so it is moss
+   the instant the numeral is), overhanging the digits by 3px each side and set
+   1.5deg off level so it reads as drawn by hand rather than typeset. It is an
+   ::after on the numeral span — absolutely positioned, so the 26px gutter never
+   moves — and it SWEEPS from the left over one --snap (120ms), the same dry
+   snap as everything else here. Un-striking is the same transition backwards,
+   which is why this is a transition and not an animation: an undo or a lifted
+   stone retracts the rule instead of leaving a stale tick. */
+/* line-height:1 so the span box hugs the em: with `normal` the box carries
+   descender room the digits never use and the rule lands high, across the caps
+   instead of through the middle of the numeral. */
+.clue .v{position:relative;display:inline-block;line-height:1;}
+.clue .v::after{
+  /* +1px, measured, not guessed: with line-height:1 the 12px span puts the
+     baseline on its bottom edge and Plex Mono's digits are 8px tall, so the
+     ink runs 4→12 and its centre is 8 — 2px BELOW the box's own 50%. */
+  content:"";position:absolute;left:-3px;right:-3px;top:50%;margin-top:1px;height:2px;
+  background:currentColor;border-radius:1px;pointer-events:none;
+  transform:scaleX(0) rotate(-1.5deg);transform-origin:left center;
+  transition:transform var(--snap);
+}
+.clue.done .v::after{transform:scaleX(1) rotate(-1.5deg);}
+@media (prefers-reduced-motion:reduce){
+  .clue .v::after{transition:none;}
+}
 .cell{aspect-ratio:1;border-radius:6px;background:var(--panel-2);border:0;padding:0;
   display:flex;align-items:center;justify-content:center;
   font-family:var(--mono);font-size:16px;font-weight:600;color:var(--stone-ink);

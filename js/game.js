@@ -262,8 +262,9 @@
     }
 
     // ----------------------------------------------------------- line state
-    /* Per line: stone count, load so far, and whether BOTH are satisfied —
-       count == 4 and load == clue. That pair is what turns the numeral moss. */
+    /* Per line: stone count, load so far, and whether the line is FINISHED —
+       count == 4, load == clue, and no repulsion inside the line. That triple
+       is what strikes the clue numeral through and turns it moss. */
     function lineFlags() {
       var st = lineState();
       var rows = st.rows.map(function (x) { return x.done; });
@@ -287,9 +288,23 @@
         if (v === UNKNOWN) { open++; continue; }
         if (v > 0) { stones++; sum += v; }
       }
+      /* REPULSION INSIDE THE LINE. Consecutive cells of a row (or of a column)
+         are orthogonal neighbours, so two equal weights side by side break the
+         model's repulsion rule. place() refuses that, but a forced write (the
+         hint path, a restored save, the lesson) can still produce it — and a
+         line that adds up while being internally illegal must never be ticked
+         off. The rule is model's; this only reads it along one line. */
+      var clean = true;
+      for (var p = 1; p < cells.length; p++) {
+        var a = g.board[cells[p - 1]];
+        if (a > 0 && a === g.board[cells[p]]) { clean = false; break; }
+      }
+      /* `open` is deliberately NOT part of `done`: once four stones are down
+         the line cannot take another (refusal() forbids it), so the line is
+         finished whether or not the player bothered to × the leftovers. */
       return {
-        stones: stones, sum: sum, clue: clue, open: open,
-        done: open === 0 && stones === M.STONES_PER_LINE && sum === clue,
+        stones: stones, sum: sum, clue: clue, open: open, clean: clean,
+        done: stones === M.STONES_PER_LINE && sum === clue && clean,
         over: sum > clue || stones > M.STONES_PER_LINE
       };
     }
