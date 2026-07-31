@@ -18,9 +18,16 @@
    Two inputs:
      tierKey     which technique the board demands, i.e. how much of the time
                  goes on reasoning rather than typing
-     openCells   how many cells the player actually has to fill. Bedrock and
-                 givens are free, so a board inherited from a long chain is
-                 genuinely shorter and its par shortens with it. */
+     openCells   how many cells the player actually has to fill.
+
+   A NOTE ON BEDROCK, because the obvious assumption is wrong: inheriting a long
+   chain does NOT shorten the board. Bedrock counts as part of the given set, so
+   dig-until-unique simply reveals that many fewer cells to compensate — measured
+   at 16.3 total givens with no bedrock against 16.8 with five. Open cells, and
+   therefore par, are effectively unchanged by chain length. Par varies with the
+   board the generator happened to cut, not with how long you have been playing.
+
+   Par is for the WHOLE BOARD, not per move. */
 
 (function (root, factory) {
   var api = factory();
@@ -33,18 +40,26 @@
      is bigger than the step from Silt to Shale (same technique, longer chain of
      it) — the numbers follow the ladder rather than a straight line. */
   var SEC_PER_CELL = {
-    topsoil: 4.0,
-    silt: 5.0,
-    shale: 6.5,
-    slate: 8.0,
-    basalt: 9.5,
-    bedrock: 11.0
+    // Topsoil is where a player who has never seen the game starts, so it does
+    // not sit at the bottom of a straight line — it gets nearly as long a leash
+    // as Silt. The old 4.0 worked out at 6.4s a cell, which no first-timer will
+    // ever hit, and that made the third stone a speed award on the one tier
+    // where it should be the easiest thing in the world to earn.
+    topsoil: 6.0,
+    silt: 6.5,
+    shale: 7.5,
+    slate: 9.0,
+    basalt: 10.5,
+    bedrock: 12.0
   };
 
-  /* Headroom on top of that unhurried pace. This is the forgiveness: at 1.6x a
-     player who reads every clue twice, pauses, and comes back to it still beats
-     par. */
-  var HEADROOM = 1.6;
+  /* Headroom on top of that unhurried pace. This is the forgiveness, and it is
+     deliberately generous: at 2.4x a player can read every clue twice, pause,
+     put the phone down, come back to it, and still beat par. Raised from 1.6x,
+     which put Topsoil at 6.4 seconds a cell and quietly turned the third stone
+     into a speed award. The stone you lose should come from a hint or a wrong
+     guess — never from thinking. */
+  var HEADROOM = 2.4;
 
   /* No board should ever demand a sub-two-minute solve, however much bedrock
      it inherited. */

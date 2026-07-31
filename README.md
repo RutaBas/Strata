@@ -43,6 +43,19 @@ The chain is the point of the game.
 
 The daily puzzle is **never** gated on the chain.
 
+### Midnight, without a reload
+
+An installed PWA is *resumed*, never reloaded, so "what day is it?" cannot be read once at boot.
+`ui.js` keeps `today` as state and re-reads it on **visibilitychange, pageshow, window focus and a
+60-second idle poll** (`checkDate()`). Getting this wrong is invisible — the app looks fine and
+just quietly stops counting — so it is pinned by `test/chain.test.js`, which drives the real
+`ui.js` against a DOM shim, rolls an injected clock past midnight and includes a mutation check
+that the test goes red without the fix.
+
+A board belongs to **the day it was started**. If midnight passes mid-board, the board is not
+yanked: it keeps its own `dateKey`, records against that day, and the chain lifecycle (break
+notice, home refresh) catches up when the player returns to the core log.
+
 ## Difficulty
 
 Six tiers, ascending by hardness, graded by **which solver technique is required** — never by
@@ -191,8 +204,11 @@ being played. Sound and haptics are both toggleable and default on.
 ## Running the tests
 
 ```bash
-node test/verify.js                      # the logic gate — must be 35/35
+node test/verify.js                      # the logic gate — must be 54/54
 node games/_shared/meta/test/verify.js    # the shared meta-layer gate
+node test/model.test.js                  # chain / bedrock arithmetic
+node test/notes.test.js                  # pencil notes, and their non-interference
+node test/chain.test.js                  # the day boundary across a PWA resume
 node scripts/contrast.js                 # WCAG AA, exits non-zero on any failure
 node scripts/make-icons.js               # regenerate the app icons
 ```

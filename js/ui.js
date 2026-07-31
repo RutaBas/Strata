@@ -12,6 +12,15 @@ var UI = (function () {
   var settings = Store.loadSettings();
   var chain = null;
   var today = null;
+
+  /* THE CLOCK SEAM. Everything in this file that asks "what day is it NOW?"
+     goes through clock.now() — never `new Date()` inline — so test/chain.test.js
+     can roll the date forward without a reload and prove the resume path.
+     In the browser this is a plain new Date(). */
+  var clock = { now: function () { return new Date(); } };
+  var pendingRollover = false;   // the date moved while a board was open
+  var currentScreen = null;      // which SCREENS entry is visible
+  var dayTimer = null;           // the light idle poll for midnight
   var armed = null;  // weight armed on the keypad, or null for cycle mode
   var notesMode = false;   // the NOTES key: weights pencil instead of place
   var tickTimer = null;
@@ -40,6 +49,7 @@ var UI = (function () {
   function show(name) {
     // a hint belongs to the board it was asked on; leaving the board ends it
     if (name !== "play") clearHint();
+    currentScreen = name;
     SCREENS.forEach(function (s) {
       var node = $("screen-" + s);
       if (!node) return;
@@ -108,18 +118,84 @@ var UI = (function () {
 
     StrataLogic.load().then(function (logic) {
       L = logic; M = logic.model;
-      today = M.dateKey();
+      today = todayKey();
       Lineage.init(M);
       MetaUI.init({
         meta: Meta, model: M,
         hooks: { onReplay: openReplay }
       });
       wire();
+      startDayWatch();
       openChain();
     }).catch(function (err) {
       $("drill-msg").textContent = "The core log will not open.";
       $("screen-drill").querySelector(".plainsub").textContent = String(err.message || err);
     });
+  }
+
+  /* ================================================== the day boundary =====
+     `today` is STATE, not a constant, and this is the only place it moves.
+
+     THE BUG THIS EXISTS TO KILL: an installed iOS PWA — and any long-lived
+     tab — is RESUMED, never reloaded. Before this, `today` was read once at
+     boot and never again, so after midnight the app still held yesterday's
+     key. Then `chain.lastSolvedDate !== today` was FALSE, the new day's board
+     was silently demoted to FREE PLAY, the chain stopped advancing, and
+     Meta.recordWin was never called with mode "daily" — so per-tier bests
+     stopped updating too. Both of Ruta's symptoms, one root cause. Nothing
+     looked broken, which is exactly why it must stay tested.
+
+     Every path back into the app calls checkDate(): visibilitychange (not
+     hidden), pageshow (bfcache), window focus, and a light 60s poll while the
+     app sits idle. */
+  function todayKey() { return M.dateKey(clock.now()); }
+
+  function startDayWatch() {
+    if (dayTimer) clearInterval(dayTimer);
+    // cheap: one string compare a minute, and only while actually on screen
+    dayTimer = setInterval(function () {
+      if (!document.hidden) checkDate();
+    }, 60000);
+  }
+
+  /* -> true if the date moved. Safe to call from anywhere, any number of
+     times; a no-op on the same day. */
+  function checkDate() {
+    if (!M) return false;                 // still booting
+    var k = todayKey();
+    if (k === today) return false;
+    today = k;
+
+    /* A BOARD BELONGS TO THE DAY IT WAS STARTED. We never yank one out from
+       under the player at midnight. G.state.dateKey is stamped at begin() and
+       never rewritten, setStone commits with THAT key, and model.recordSolve
+       refuses a day it has already logged — so a board begun on the 29th and
+       finished on the 30th counts for the 29th, exactly once, and the 30th's
+       own daily is still there to be played afterwards. The chain lifecycle
+       (break notice, home refresh) simply waits until the player is back on
+       the core log, which is where all of it is visible anyway. */
+    if (currentScreen !== "home") { pendingRollover = true; return true; }
+
+    runDayLifecycle();
+    return true;
+  }
+
+  /* The same work openChain() does, re-run against the NEW date: re-read the
+     chain, re-run M.chainStatus, show the break notice if the chain died
+     overnight, and re-render the home screen (count, pips, Continue, today's
+     copy). Clearing the flag FIRST is what stops openChain()'s own goHome()
+     from recursing back in here. */
+  function runDayLifecycle() {
+    pendingRollover = false;
+    openChain();
+  }
+
+  function onResume() {
+    if (!L) return;                        // boot has not finished
+    checkDate();
+    if (G && G.state.phase === "playing" && currentScreen === "play") {
+      G.startClock(); startTick();
+    }
   }
 
   /* Chain state on open. The board is NEVER gated on this — a break only
@@ -171,13 +247,16 @@ var UI = (function () {
   // ==================================================================== home
   function goHome() {
     stopTick();
+    // a rollover that waited for an open board catches up here, on the one
+    // screen where the chain, the pips and today's copy are actually shown
+    if (pendingRollover) { runDayLifecycle(); return; }
     show("home");
     renderHome();
     maybeHowTo();   // first launch only
   }
 
   function renderHome() {
-    var d = new Date();
+    var d = clock.now();
     $("home-date").textContent = "Core log · " +
       d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
 
@@ -247,6 +326,11 @@ var UI = (function () {
   // =============================================================== new board
   function startTier(tierKey, opts) {
     if (busy) return;
+    /* Last line of defence: a tier tapped after the app sat open past midnight
+       must cut TODAY's core, not yesterday's, and must count as daily. The
+       date is refreshed in place and we carry on — the ONE case we stop for is
+       an overnight chain break, whose notice must not be buried under a board. */
+    if (checkDate() && currentScreen === "break") return;
     var o = opts || {};
     /* A calendar replay is always free play — it re-cuts that day's core from
        the same seed, and the chain does not move. */
@@ -732,7 +816,10 @@ var UI = (function () {
       ["time", fmt(solvedInfo.ms)],
       ["moves", String(solvedInfo.moves)],
       ["chain", G.state.isDaily ? String(chain.length + 1) : String(chain.length)],
-      ["best · " + (tier ? tier.name.toLowerCase() : ""), bestLabel]
+      // on free play the best is shown but explicitly marked as untouched,
+      // so a fast practice run never looks like a record the game "lost"
+      [(G.state.isDaily ? "best · " : "best · daily only · ") +
+        (tier ? tier.name.toLowerCase() : ""), bestLabel]
     ];
     var box = $("win-stats");
     box.innerHTML = "";
@@ -751,8 +838,18 @@ var UI = (function () {
       // Free play touches nothing: no chain, no seed, no record.
       $("surv-head").textContent = "free play";
       $("surv-board").innerHTML = "";
+      /* Say the quiet part out loud. A free-play time that BEATS the stored
+         best is the one case where "leaves no trace" looks like a bug rather
+         than a rule, so it is named explicitly instead of being swallowed. */
+      var beat = solvedInfo.ms > 0 && (!rec.bestMs || solvedInfo.ms < rec.bestMs);
       $("surv-say").innerHTML = "This was a practice core. <b>It leaves no trace</b> — " +
-        "the chain only moves on today's daily board.";
+        "the chain only moves on today's daily board." +
+        (beat
+          ? " That was " + (rec.bestMs ? "faster than your " + escapeHTML(tier ? tier.name.toLowerCase() : "") +
+              " best of " + fmt(rec.bestMs) : "your fastest " +
+              escapeHTML(tier ? tier.name.toLowerCase() : "") + " core yet") +
+            ", but <b>free play does not set records</b> — only the daily does."
+          : "");
       $("btn-to-seed").textContent = "Back to the core log";
       $("btn-to-seed").onclick = function () { Store.clearSave(); goHome(); };
       return;
@@ -930,7 +1027,10 @@ var UI = (function () {
 
   function setStone() {
     if (seedPick === null) return;
-    var res = G.commitSeed(chain, today);
+    /* The BOARD's day, not the ambient one. If midnight passed while this
+       board was open, it still counts for the day it was started. */
+    var boardDate = G.state.dateKey || today;
+    var res = G.commitSeed(chain, boardDate);
     chain = res.chain;
     Store.saveChain(chain);
     Store.noteChain(chain);
@@ -946,7 +1046,7 @@ var UI = (function () {
     });
 
     Store.pushHistory({
-      date: today, tier: G.state.tier,
+      date: boardDate, tier: G.state.tier,
       grid: Array.prototype.slice.call(G.state.solution),
       survivors: G.survivorSet(),
       ages: carriedAges,
@@ -1178,6 +1278,11 @@ var UI = (function () {
   // ================================================================== save
   function saveNow() {
     if (!G) return;
+    /* A "rotated" board is COMMITTED: setStone already cleared the save on
+       purpose. Writing one again here would resurrect a ghost "Continue" on
+       the home screen — which is exactly what a backgrounding right after the
+       commit used to do, since visibilitychange and pagehide both saveNow(). */
+    if (G.state.phase === "rotated") return;
     Store.saveSave({ g: G.snapshot(), recorded: recorded, solved: solvedInfo });
   }
 
@@ -1270,11 +1375,20 @@ var UI = (function () {
       });
     });
 
+    /* THREE resume paths, because no single one covers everything: an
+       installed PWA comes back through visibilitychange, a bfcache restore
+       comes back through pageshow, and a desktop tab re-focus fires neither
+       reliably. All three re-check the date — see checkDate(). */
     document.addEventListener("visibilitychange", function () {
-      if (!G) return;
-      if (document.hidden) { G.pauseClock(); saveNow(); stopTick(); }
-      else if (G.state.phase === "playing" && !$("screen-play").hidden) { G.startClock(); startTick(); }
+      if (document.hidden) {
+        if (G) { G.pauseClock(); saveNow(); }
+        stopTick();
+        return;
+      }
+      onResume();
     });
+    window.addEventListener("pageshow", onResume);
+    window.addEventListener("focus", onResume);
     window.addEventListener("pagehide", function () { if (G) { G.pauseClock(); saveNow(); } });
 
     // desktop convenience only; nothing here is required to play
@@ -1294,7 +1408,25 @@ var UI = (function () {
     }, { passive: false });
   }
 
-  return { boot: boot };
+  /* `_test` is the seam test/chain.test.js drives. It exposes no new
+     behaviour — only a settable clock and read-only views of state the tests
+     assert on — so the shipped app is unchanged by its presence. */
+  return {
+    boot: boot,
+    _test: {
+      setClock: function (fn) { clock.now = fn; },
+      checkDate: checkDate,
+      onResume: onResume,
+      today: function () { return today; },
+      chain: function () { return chain; },
+      game: function () { return G; },
+      screen: function () { return currentScreen; },
+      pending: function () { return pendingRollover; },
+      startTier: startTier,
+      setStone: setStone,
+      solvedInfo: function () { return solvedInfo; }
+    }
+  };
 })();
 
 document.addEventListener("DOMContentLoaded", UI.boot);
