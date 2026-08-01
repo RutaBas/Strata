@@ -234,6 +234,12 @@
     <button class="toggle" id="set-sound" type="button" aria-pressed="true"><span>Sound</span><i></i></button>
     <button class="toggle" id="set-haptics" type="button" aria-pressed="true"><span>Haptics</span><i></i></button>
     <button class="toggle" id="set-dark" type="button" aria-pressed="false"><span>Dark mode</span><i></i></button>
+    <!-- Which build is this, and what does the chain actually think? An
+         installed PWA is frozen to the build it was installed from, so without
+         this neither the player nor anyone helping them can tell whether a fix
+         has arrived. Tap to copy. -->
+    <button class="diagbox" id="set-diag" type="button"
+            aria-label="Build and chain diagnostics. Tap to copy."></button>
     <button class="btn ghost" id="set-close" type="button">Done</button>
   </div>
 </div>

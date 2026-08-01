@@ -43,6 +43,12 @@ var UI = (function () {
      per surface in css/style.css (.cell.empty), not here. */
   var EMPTY_MARK = "×";
 
+  /* The shipped build, shown in Settings. Bump it with sw.js's CACHE_VERSION,
+     always together — an installed PWA is frozen to the build it was installed
+     from, and without a visible version neither the player nor anyone helping
+     them can tell whether a fix has actually arrived on the device. */
+  var BUILD = "strata-v10";
+
   var SCREENS = ["home", "drill", "play", "win", "seed", "break", "records", "lineage", "calendar", "tutor"];
   var hintIndex = null;   // the cell the live hint names, or null
 
@@ -1284,6 +1290,29 @@ var UI = (function () {
   }
 
   // =============================================================== settings
+  /* ------------------------------------------------------------ diagnostics
+     Everything needed to answer "why is my chain not moving?" without guessing:
+     which build is on the device, what the app thinks today is, and what the
+     chain actually holds. `today` versus the live date is the tell — if they
+     disagree, the app is running a build from before the day-boundary fix. */
+  function diagText() {
+    var live = M ? M.dateKey(new Date()) : "?";
+    var c = chain || {};
+    return [
+      "build " + BUILD,
+      "today " + (today || "?") + (live === today ? "" : "  (live " + live + " — STALE)"),
+      "chain " + (c.length || 0) + " · longest " + (c.longest || 0),
+      "last solved " + (c.lastSolvedDate || "never"),
+      "bedrock " + ((c.bedrock || []).length),
+      "today's daily " + (c.lastSolvedDate === today ? "already cut" : "still waiting")
+    ].join("\n");
+  }
+
+  function renderDiag() {
+    var n = $("set-diag");
+    if (n) n.textContent = diagText();
+  }
+
   function applySettings() {
     document.body.classList.toggle("dark", !!settings.dark);
     // oxide is the brand colour and matches the manifest; dark mode drops the
@@ -1351,7 +1380,7 @@ var UI = (function () {
   // =================================================================== wire
   function wire() {
     $("btn-continue").addEventListener("click", resume);
-    $("btn-settings").addEventListener("click", function () { sheet("sheet-settings", true); });
+    $("btn-settings").addEventListener("click", function () { renderDiag(); sheet("sheet-settings", true); });
     $("btn-records").addEventListener("click", goRecords);
     $("btn-rec-back").addEventListener("click", goHome);
     $("btn-lineage").addEventListener("click", goLineage);
@@ -1389,7 +1418,7 @@ var UI = (function () {
       G.clearBoard(); renderBoard(); updateHUD(); saveNow();
     });
     $("mn-settings").addEventListener("click", function () {
-      sheet("sheet-menu", false); sheet("sheet-settings", true);
+      sheet("sheet-menu", false); renderDiag(); sheet("sheet-settings", true);
     });
     $("mn-home").addEventListener("click", function () {
       sheet("sheet-menu", false); saveNow(); goHome();
@@ -1399,6 +1428,15 @@ var UI = (function () {
     $("set-haptics").addEventListener("click", function () { toggleSetting("haptics"); });
     $("set-dark").addEventListener("click", function () { toggleSetting("dark"); });
     $("set-close").addEventListener("click", function () { sheet("sheet-settings", false); });
+    $("set-diag").addEventListener("click", function () {
+      var t = diagText();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(
+          function () { toast("Diagnostics copied."); },
+          function () { toast("Could not copy — read it off the screen."); }
+        );
+      } else toast("Could not copy — read it off the screen.");
+    });
 
     Array.prototype.forEach.call(document.querySelectorAll(".scrim"), function (s) {
       s.addEventListener("click", function () {
