@@ -24,33 +24,49 @@
 
 <!-- ============================================================ HOME -->
 <section class="screen" id="screen-home">
-  <div class="core-bg" aria-hidden="true"></div>
-  <div class="veil" aria-hidden="true"></div>
-  <div class="pad">
-    <div class="brandline" id="home-date">Core log</div>
-    <h1 class="title">STRATA</h1>
+  <!-- the core sample, moved to a 30px edge strip with survey ticks — the
+       body of the log is plain paper (UI direction 3a) -->
+  <div class="core-edge" aria-hidden="true"></div>
+  <div class="core-ticks" aria-hidden="true">
+    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+  </div>
+  <div class="pad homepad">
+    <div class="homehead">
+      <h1 class="title">STRATA</h1>
+      <div class="datestamp" id="home-date"></div>
+    </div>
     <p class="tagline">Four stones to a line. None touching its equal.</p>
+    <div class="rule-heavy"></div>
 
-    <div class="chainbar">
-      <div>
-        <div class="n" id="chain-n">0</div>
-        <div class="lab" id="chain-lab">day chain</div>
-      </div>
+    <div class="secthead">
+      <span class="sect">the chain</span>
+      <span class="sectnote" id="chain-best"></span>
+    </div>
+    <div class="chainrow">
+      <div class="n" id="chain-n">0</div>
+      <div class="chainlab">day<br>chain</div>
       <div class="pips" id="chain-pips"></div>
     </div>
-    <div class="streakline" id="streak-line"></div>
+    <div class="chainsub" id="chain-sub"></div>
 
-    <button class="btn primary" id="btn-continue" type="button" hidden></button>
+    <div class="rule-hair"></div>
+    <div class="secthead">
+      <span class="sect">today</span>
+      <span class="sectnote oxide" id="home-foot">today's core is yours alone</span>
+    </div>
+
+    <button class="btn primary continue" id="btn-continue" type="button" hidden></button>
 
     <div class="tiers" id="tier-list"></div>
 
-    <div class="foot" id="home-foot">today's core is yours alone</div>
-    <div class="homebar">
-      <button class="linkbtn" id="btn-tutor" type="button">Lesson</button>
-      <button class="linkbtn" id="btn-settings" type="button">Settings</button>
-      <button class="linkbtn" id="btn-records" type="button">Records</button>
-      <button class="linkbtn" id="btn-calendar" type="button">Calendar</button>
-      <button class="linkbtn" id="btn-lineage" type="button">Lineage</button>
+    <div class="navwrap">
+      <div class="navchips">
+        <button class="navchip" id="btn-tutor" type="button"><i class="mark m-lesson"></i><span>Lesson</span></button>
+        <button class="navchip" id="btn-records" type="button"><i class="mark m-records"></i><span>Records</span></button>
+        <button class="navchip" id="btn-calendar" type="button"><i class="mark m-calendar"></i><span>Calendar</span></button>
+        <button class="navchip" id="btn-settings" type="button"><i class="mark m-settings"></i><span>Settings</span></button>
+      </div>
+      <button class="linrow" id="btn-lineage" type="button">Lineage</button>
     </div>
   </div>
 </section>

@@ -47,7 +47,7 @@ var UI = (function () {
      always together — an installed PWA is frozen to the build it was installed
      from, and without a visible version neither the player nor anyone helping
      them can tell whether a fix has actually arrived on the device. */
-  var BUILD = "strata-v10";
+  var BUILD = "strata-v11";
 
   var SCREENS = ["home", "drill", "play", "win", "seed", "break", "records", "lineage", "calendar", "tutor"];
   var hintIndex = null;   // the cell the live hint names, or null
@@ -263,31 +263,42 @@ var UI = (function () {
 
   function renderHome() {
     var d = clock.now();
-    $("home-date").textContent = "Core log · " +
-      d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+    $("home-date").textContent =
+      d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "2-digit" });
 
     $("chain-n").textContent = chain.length;
-    $("chain-lab").textContent = chain.length === 1 ? "day chain" : "day chain";
+    $("chain-best").textContent = "best " + Math.max(chain.longest || 0, chain.length || 0);
 
+    // bedrock as the stones themselves: weight colour, oxide ring, age corner
     var pips = $("chain-pips");
     pips.innerHTML = "";
     var bed = (chain.bedrock || []).slice().sort(function (a, b) { return b.age - a.age; });
     for (var i = 0; i < M.BEDROCK_CAP; i++) {
       var p = el("span", "pip" + (bed[i] ? "" : " gone"), bed[i] ? String(bed[i].w) : "");
-      if (bed[i]) p.title = "weight " + bed[i].w + ", age " + bed[i].age;
+      if (bed[i]) {
+        p.style.background = "var(--w" + bed[i].w + ")";
+        p.title = "weight " + bed[i].w + ", age " + bed[i].age;
+        p.appendChild(el("span", "age", String(bed[i].age)));
+      }
       pips.appendChild(p);
     }
 
-    MetaUI.renderStreak($("streak-line"));
+    var carried = (chain.bedrock || []).length;
+    var logged = Store.loadStats().solved || 0;
+    $("chain-sub").textContent =
+      (carried ? carried + " stone" + (carried === 1 ? "" : "s") + " inherited" : "starting bare") +
+      " · " + logged + " core" + (logged === 1 ? "" : "s") + " logged";
 
     var save = Store.loadSave();
     var cont = $("btn-continue");
     if (save && save.g) {
       var tier = M.tierByKey(save.g.tier);
       cont.hidden = false;
-      cont.textContent = save.g.phase === "won"
+      cont.innerHTML = "";
+      cont.appendChild(el("span", null, save.g.phase === "won"
         ? "Continue — " + (tier ? tier.name : save.g.tier) + ", finish the chain"
-        : "Continue — " + (tier ? tier.name : save.g.tier) + ", " + fmt(save.g.elapsedMs || 0);
+        : "Continue — " + (tier ? tier.name : save.g.tier) + ", " + fmt(save.g.elapsedMs || 0)));
+      cont.appendChild(el("span", "arr", "→"));
     } else {
       cont.hidden = true;
     }
@@ -296,7 +307,9 @@ var UI = (function () {
     var list = $("tier-list");
     list.innerHTML = "";
     M.TIERS.forEach(function (t, i) {
-      var b = el("button", "tier");
+      // the oxide clamp marks the tier you are mid-core on — Continue above
+      // already states the clock, the row only says WHICH
+      var b = el("button", "tier" + (save && save.g && save.g.tier === t.key ? " today" : ""));
       b.type = "button";
       var bar = el("span", "bar");
       bar.style.background = i < 5 ? "var(--w" + (i + 1) + ")" : "var(--accent)";
@@ -315,11 +328,9 @@ var UI = (function () {
     lin.textContent = open ? "Lineage" : "Lineage · unlocks on day 7";
     lin.setAttribute("aria-disabled", open ? "false" : "true");
 
-    var carried = (chain.bedrock || []).length;
     $("home-foot").textContent = solvedToday
-      ? "today's core is cut · anything now is free play"
-      : "today's core is yours alone · " +
-        (carried ? carried + " stone" + (carried === 1 ? "" : "s") + " inherited" : "starting bare");
+      ? "today's core is cut · free play"
+      : "today's core is yours alone";
   }
 
   function techLabel(key) {
