@@ -65,8 +65,7 @@ body{
 /* ------------------------------------------ the core-sample edge (3a home)
    The sediment moves off the background and into a 30px strip down the left,
    full ink strength — no veil, so the body of the log is plain paper and the
-   only texture on the screen is the core itself. Beside it, a 14px column of
-   survey ticks; the 7th is the heavier datum line. */
+   only texture on the screen is the core itself. */
 .core-edge{position:absolute;top:0;bottom:0;left:0;width:30px;
   background:
     repeating-linear-gradient(90deg, rgba(36,31,25,.06) 0 1px, transparent 1px 6px),
@@ -78,13 +77,6 @@ body{
       #6b563a 79% 86%, #7d6a4c 86% 92%, #52452f 92% 100%);
   box-shadow:inset -1px 0 0 rgba(36,31,25,.24);}
 body.dark .core-edge{filter:brightness(.72) saturate(.9);}
-.core-ticks{position:absolute;top:0;bottom:0;left:30px;width:14px;
-  display:flex;flex-direction:column;justify-content:space-between;
-  padding:calc(env(safe-area-inset-top,0px) + 26px) 0
-          calc(env(safe-area-inset-bottom,0px) + 26px);}
-.core-ticks i{height:1px;background:var(--ink);opacity:.22;margin-left:9px;}
-.core-ticks i:nth-child(3n+1){margin-left:0;}
-.core-ticks i:nth-child(7){height:2px;opacity:.45;}
 
 /* ---------------------------------------------------------------- type */
 .brandline{font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);}
