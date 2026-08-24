@@ -47,7 +47,7 @@ var UI = (function () {
      always together — an installed PWA is frozen to the build it was installed
      from, and without a visible version neither the player nor anyone helping
      them can tell whether a fix has actually arrived on the device. */
-  var BUILD = "strata-v11";
+  var BUILD = "strata-v12";
 
   var SCREENS = ["home", "drill", "play", "win", "seed", "break", "records", "lineage", "calendar", "tutor"];
   var hintIndex = null;   // the cell the live hint names, or null
@@ -158,10 +158,32 @@ var UI = (function () {
 
   function startDayWatch() {
     if (dayTimer) clearInterval(dayTimer);
-    // cheap: one string compare a minute, and only while actually on screen
+    // cheap: one string compare a minute, and only while actually on screen.
+    // The same beat keeps the TODAY countdown honest while the log is up.
     dayTimer = setInterval(function () {
-      if (!document.hidden) checkDate();
+      if (document.hidden) return;
+      if (!checkDate() && currentScreen === "home") renderTodayNote();
     }, 60000);
+  }
+
+  /* How long today's core stays today's: the gap to local midnight, spoken in
+     whole minutes and rounded UP, so it never promises time that is gone. */
+  function untilTomorrow() {
+    var d = clock.now();
+    var next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+    var m = Math.ceil((next - d) / 60000);
+    var h = Math.floor(m / 60);
+    m -= h * 60;
+    return h ? h + "h " + m + "m" : m + "m";
+  }
+
+  /* The right-hand slot of the TODAY rule. Short on purpose — it shares the
+     line with the section label at 390px. */
+  function renderTodayNote() {
+    var left = untilTomorrow();
+    $("home-foot").textContent = chain.lastSolvedDate === today
+      ? "cut · next core in " + left
+      : "yours alone · " + left + " left";
   }
 
   /* -> true if the date moved. Safe to call from anywhere, any number of
@@ -303,7 +325,6 @@ var UI = (function () {
       cont.hidden = true;
     }
 
-    var solvedToday = chain.lastSolvedDate === today;
     var list = $("tier-list");
     list.innerHTML = "";
     M.TIERS.forEach(function (t, i) {
@@ -328,9 +349,7 @@ var UI = (function () {
     lin.textContent = open ? "Lineage" : "Lineage · unlocks on day 7";
     lin.setAttribute("aria-disabled", open ? "false" : "true");
 
-    $("home-foot").textContent = solvedToday
-      ? "today's core is cut · free play"
-      : "today's core is yours alone";
+    renderTodayNote();
   }
 
   function techLabel(key) {
