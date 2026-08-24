@@ -175,10 +175,31 @@ body.dark .linrow{border-color:rgba(236,229,215,.22);}
 #tier-list .tier.today .nm{font-weight:700;}
 
 /* ----------------------------------------------------------------- board */
-.hud{display:flex;align-items:center;gap:var(--s3);font-family:var(--mono);font-size:13px;
-  color:var(--dim);margin-bottom:var(--s3);}
-.hud .big{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums;}
-.hud .spacer{margin-left:auto;}
+/* The ruled header (spec 2c). The tier owns the masthead — its weight chip
+   beside its name — the chain-day sits opposite, and a full-width 2px rule
+   closes the head the way the home log's masthead is ruled. */
+.playhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding:0 2px 26px;font-family:var(--mono);font-size:13px;}
+.ph-tier{display:flex;align-items:center;gap:8px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--ink);}
+.ph-chip{display:block;width:6px;height:16px;border-radius:3px;background:var(--w1);
+  box-shadow:inset 0 -1px 0 rgba(0,0,0,.18);}
+.ph-day{letter-spacing:.14em;text-transform:uppercase;color:var(--dim);}
+.rule-heavy.playrule{margin-top:0;}
+/* The working row: the clock carries the weight, moves stack beside it as a
+   small annotation, and PAUSE sits in the head — not in the tools row. */
+.statrow{display:flex;align-items:flex-end;gap:14px;padding:14px 2px 0;
+  font-family:var(--mono);}
+.statrow .big{font-size:32px;font-weight:700;line-height:.9;color:var(--ink);
+  font-variant-numeric:tabular-nums;}
+.movestack{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);line-height:1.5;padding-bottom:3px;}
+.pausebtn{margin-left:auto;border:0;cursor:pointer;font-family:var(--mono);
+  font-size:11.5px;letter-spacing:.12em;color:var(--ink);background:var(--panel);
+  border-radius:9px;padding:13px 17px;box-shadow:inset 0 -2px 0 var(--press);
+  transition:transform var(--snap);}
+.pausebtn:active{transform:translateY(2px);}
+.rule-hair.boardrule{margin:26px 0 30px;}
 .board{display:grid;grid-template-columns:26px repeat(7,1fr);gap:4px;touch-action:manipulation;}
 .clue{font-family:var(--mono);font-size:12px;display:flex;align-items:center;justify-content:center;
   color:var(--dim);font-variant-numeric:tabular-nums;transition:color var(--snap);}
@@ -282,10 +303,20 @@ body.dark .cell.empty{color:rgba(236,229,215,.55);}
 /* while notes are on, the erase key has nothing to toggle and looks it — it
    still answers a tap, with a sentence, rather than doing nothing silently */
 .pad-keys.noting .key.kerase{opacity:.45;}
+/* Spec 2c sizes the play screen's keys up — 62px weights, 52px tools, 11px
+   radii — to spend the dead space under the board. The field lesson keeps the
+   smaller component sizes, so this is scoped to the boardpad. */
+.boardpad .pad-keys{margin-top:20px;}
+.boardpad .key{min-height:62px;border-radius:11px;font-size:19px;}
+.boardpad .key.kerase{font-size:22px;}
+.boardpad .tool{min-height:52px;border-radius:11px;}
 .tools{display:flex;gap:var(--s2);margin-top:var(--s2);}
 .tool{flex:1;min-height:48px;border:0;border-radius:10px;background:var(--panel);display:flex;align-items:center;
-  justify-content:center;font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;color:var(--ink);
+  justify-content:center;flex-direction:column;gap:3px;
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.08em;color:var(--ink);
   box-shadow:inset 0 -2px 0 var(--press);cursor:pointer;transition:transform var(--snap);}
+/* the glyph above each label: same ink, a step larger, no extra line box */
+.ticon{font-style:normal;font-size:15px;line-height:1;font-weight:500;}
 .tool:active{transform:translateY(2px);}
 .tool[disabled]{opacity:.45;}
 /* NOTES, lit. The one place a mode is held open in this game, so it is the
@@ -444,6 +475,19 @@ body.dark .cell.empty{color:rgba(236,229,215,.55);}
   padding:var(--s4) var(--s3) calc(env(safe-area-inset-bottom,0px) + var(--s4));
   box-shadow:0 -8px 30px rgba(0,0,0,.28);animation:slideup 180ms cubic-bezier(.22,.61,.36,1) both;}
 @keyframes slideup{from{transform:translateY(18px);opacity:.4;}to{transform:none;opacity:1;}}
+/* The play menu: Resume is the one big target, the rest sit in a compact
+   two-column grid so the sheet is a glance, not a scroll of seven full-width
+   bars. Chips keep the tool voice — mono, small caps, panel surface. */
+.sheet .btn.primary{margin-top:var(--s3);}
+.menugrid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin-top:var(--s2);}
+.menuchip{min-height:52px;border:0;border-radius:10px;background:var(--panel);
+  display:flex;align-items:center;justify-content:center;padding:0 var(--s2);
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:var(--ink);
+  box-shadow:inset 0 -2px 0 var(--press);cursor:pointer;transition:transform var(--snap);}
+.menuchip:active{transform:translateY(2px);}
+/* an armed destructive chip: lit in oxide, asking, until the second tap */
+.menuchip.confirm{background:var(--accent);color:var(--accent-ink-aa);font-weight:600;
+  box-shadow:inset 0 -2px 0 var(--accent-dark);}
 .toggle{width:100%;min-height:52px;margin-top:var(--s2);border:0;border-radius:12px;background:var(--panel);
   box-shadow:inset 0 -2px 0 var(--press);display:flex;align-items:center;justify-content:space-between;
   padding:0 var(--s3);font-family:var(--mono);font-size:15px;color:var(--ink);cursor:pointer;}

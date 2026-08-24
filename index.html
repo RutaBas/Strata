@@ -84,20 +84,28 @@
 <!-- ============================================================= PLAY -->
 <section class="screen" id="screen-play" hidden>
   <div class="pad boardpad">
-    <div class="hud">
-      <span class="big" id="hud-time">0:00</span>
-      <span id="hud-moves">0 moves</span>
-      <span class="spacer"></span>
-      <span id="hud-tier">TOPSOIL</span>
+    <!-- the ruled header (spec 2c): the tier owns the masthead with its own
+         weight chip, the chain-day sits opposite, and a heavy rule closes it -->
+    <div class="playhead">
+      <span class="ph-tier"><i class="ph-chip" id="hud-chip" aria-hidden="true"></i><span id="hud-tier">TOPSOIL</span></span>
+      <span class="ph-day" id="hud-day"></span>
     </div>
+    <div class="rule-heavy playrule"></div>
+    <!-- the working row: clock, move count, and the pause in the head -->
+    <div class="statrow">
+      <span class="big" id="hud-time">0:00</span>
+      <span class="movestack"><span id="hud-moves">0</span><br>moves</span>
+      <button class="pausebtn" id="hud-pause" type="button">PAUSE</button>
+    </div>
+    <div class="rule-hair boardrule"></div>
     <div class="board" id="board"></div>
     <div class="pad-keys" id="keypad"></div>
     <div class="tools">
-      <button class="tool" id="tool-undo" type="button">UNDO</button>
+      <button class="tool" id="tool-undo" type="button"><i class="ticon" aria-hidden="true">&#8634;</i><span>UNDO</span></button>
       <!-- pencil notes: lit in oxide while on, so the mode is never in doubt -->
-      <button class="tool" id="tool-notes" type="button" aria-pressed="false">NOTES</button>
-      <button class="tool" id="tool-hint" type="button">HINT</button>
-      <button class="tool" id="tool-menu" type="button">MENU</button>
+      <button class="tool" id="tool-notes" type="button" aria-pressed="false"><i class="ticon" aria-hidden="true">&#9998;</i><span>NOTES</span></button>
+      <button class="tool" id="tool-hint" type="button"><i class="ticon" aria-hidden="true">?</i><span>HINT</span></button>
+      <button class="tool" id="tool-menu" type="button"><i class="ticon" aria-hidden="true">&#8801;</i><span>MENU</span></button>
     </div>
     <!-- The hint. Below the tools, never over the board, so the cell it names
          stays readable and tappable. It has no timer: it waits for the next
@@ -230,13 +238,15 @@
   <div class="scrim" data-close="1"></div>
   <div class="sheet">
     <div class="brandline">menu</div>
-    <button class="btn ghost" id="mn-resume" type="button">Resume</button>
-    <button class="btn ghost" id="mn-restart" type="button">Restart this board</button>
-    <button class="btn ghost" id="mn-clear" type="button">Clear my stones</button>
-    <button class="btn ghost" id="mn-howto" type="button">How to play</button>
-    <button class="btn ghost" id="mn-tutor" type="button">Field lesson</button>
-    <button class="btn ghost" id="mn-settings" type="button">Settings</button>
-    <button class="btn ghost" id="mn-home" type="button">Back to the core log</button>
+    <!-- Resume is the common case, so it is the one big target; everything
+         else drops to a compact two-column grid of chips -->
+    <button class="btn primary" id="mn-resume" type="button">Resume</button>
+    <div class="menugrid">
+      <button class="menuchip" id="mn-restart" type="button">Restart board</button>
+      <button class="menuchip" id="mn-howto" type="button">How to play</button>
+      <button class="menuchip" id="mn-settings" type="button">Settings</button>
+      <button class="menuchip" id="mn-home" type="button">Back to menu</button>
+    </div>
   </div>
 </div>
 

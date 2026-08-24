@@ -47,7 +47,7 @@ var UI = (function () {
      always together — an installed PWA is frozen to the build it was installed
      from, and without a visible version neither the player nor anyone helping
      them can tell whether a fix has actually arrived on the device. */
-  var BUILD = "strata-v13";
+  var BUILD = "strata-v14";
 
   var SCREENS = ["home", "drill", "play", "win", "seed", "break", "records", "lineage", "calendar", "tutor"];
   var hintIndex = null;   // the cell the live hint names, or null
@@ -440,8 +440,14 @@ var UI = (function () {
     show("play");
     clearHint();
     var tier = M.tierByKey(G.state.tier);
-    $("hud-tier").textContent = (tier ? tier.name : G.state.tier).toUpperCase() +
-      (G.state.isDaily ? "" : " · FREE");
+    $("hud-tier").textContent = (tier ? tier.name : G.state.tier).toUpperCase();
+    // the chip beside the tier name wears the tier's own weight colour
+    var ti = 0;
+    M.TIERS.forEach(function (t, i) { if (t.key === G.state.tier) ti = i; });
+    $("hud-chip").style.background = "var(--w" + Math.min(ti + 1, 5) + ")";
+    $("hud-day").textContent = G.state.isDaily
+      ? "day " + (chain.length + 1) + " of the chain"
+      : "free play";
     setNotesMode(false);   // every board opens in stone mode, never mid-pencil
     buildKeypad();
     renderBoard();
@@ -462,7 +468,7 @@ var UI = (function () {
   function updateHUD() {
     if (!G) return;
     $("hud-time").textContent = fmt(G.elapsed());
-    $("hud-moves").textContent = G.state.moves + (G.state.moves === 1 ? " move" : " moves");
+    $("hud-moves").textContent = String(G.state.moves);   // the stacked "moves" label is in the markup
     $("tool-undo").disabled = G.state.undoStack.length === 0;
   }
 
@@ -1364,7 +1370,51 @@ var UI = (function () {
     if (k === "sound" && settings.sound) Sound.play("place");
   }
 
-  function sheet(id, open) { $(id).hidden = !open; }
+  function sheet(id, open) {
+    $(id).hidden = !open;
+    // PAUSE holds the clock while any sheet is up over a live board; the last
+    // sheet to close lets it run again
+    if (!open) maybeResumeClock();
+  }
+
+  /* The pause (spec 2c): the PAUSE key in the head — and MENU — stop the clock
+     and raise the menu sheet. The clock only restarts once every sheet is down
+     and the board is still the live screen. */
+  function openPlayMenu() {
+    if (G && G.state.phase === "playing") { G.pauseClock(); stopTick(); saveNow(); }
+    disarmConfirms();   // a fresh menu never opens mid-confirmation
+    sheet("sheet-menu", true);
+  }
+
+  /* Two-tap confirm for the destructive menu chips. Arming swaps the label
+     and lights the chip; a second tap inside 3s acts. The timeout, a tap on
+     any OTHER menu control, or reopening the menu disarms it. */
+  var armedConfirm = null;   // { btn, label, timer }
+  function disarmConfirms() {
+    if (!armedConfirm) return;
+    clearTimeout(armedConfirm.timer);
+    armedConfirm.btn.classList.remove("confirm");
+    armedConfirm.btn.textContent = armedConfirm.label;
+    armedConfirm = null;
+  }
+  function confirmChip(btn, ask, action) {
+    btn.addEventListener("click", function () {
+      if (armedConfirm && armedConfirm.btn === btn) { disarmConfirms(); action(); return; }
+      disarmConfirms();   // arming one chip stands the other down
+      armedConfirm = {
+        btn: btn, label: btn.textContent,
+        timer: setTimeout(disarmConfirms, 3000)
+      };
+      btn.classList.add("confirm");
+      btn.textContent = ask;
+    });
+  }
+  function maybeResumeClock() {
+    if (currentScreen !== "play" || !G || G.state.phase !== "playing") return;
+    if (document.querySelector(".sheetwrap:not([hidden])")) return;
+    G.startClock();
+    startTick();
+  }
 
   // ================================================================== save
   function saveNow() {
@@ -1426,26 +1476,24 @@ var UI = (function () {
       sheet("sheet-menu", false); openHowTo();
     });
     $("btn-tutor").addEventListener("click", openTutor);
-    $("mn-tutor").addEventListener("click", function () {
-      sheet("sheet-menu", false); saveNow(); openTutor();
-    });
     $("hintbar").addEventListener("click", clearHint);
     $("howto-go").addEventListener("click", function () { sheet("sheet-howto", false); });
     $("btn-break-on").addEventListener("click", goHome);
     $("tool-undo").addEventListener("click", doUndo);
     $("tool-notes").addEventListener("click", toggleNotesMode);
     $("tool-hint").addEventListener("click", doHint);
-    $("tool-menu").addEventListener("click", function () { sheet("sheet-menu", true); });
+    $("tool-menu").addEventListener("click", openPlayMenu);
+    $("hud-pause").addEventListener("click", openPlayMenu);
     $("btn-set-stone").addEventListener("click", setStone);
 
     $("mn-resume").addEventListener("click", function () { sheet("sheet-menu", false); });
-    $("mn-restart").addEventListener("click", function () {
+    /* The destructive pair confirm in place: the first tap arms the chip in
+       oxide and changes its label, the second tap acts. Anything else — the
+       timeout, tapping elsewhere, reopening the menu — stands it down, so a
+       stray tap in the grid can never wipe a position. */
+    confirmChip($("mn-restart"), "Sure? Tap again", function () {
       sheet("sheet-menu", false); clearHint();
       G.restart(); renderBoard(); updateHUD(); saveNow(); startTick();
-    });
-    $("mn-clear").addEventListener("click", function () {
-      sheet("sheet-menu", false); clearHint();
-      G.clearBoard(); renderBoard(); updateHUD(); saveNow();
     });
     $("mn-settings").addEventListener("click", function () {
       sheet("sheet-menu", false); renderDiag(); sheet("sheet-settings", true);
