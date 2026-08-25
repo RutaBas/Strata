@@ -103,17 +103,21 @@
     <div class="statrow">
       <span class="big" id="hud-time">0:00</span>
       <span class="movestack"><span id="hud-moves">0</span><br>moves</span>
-      <button class="pausebtn" id="hud-pause" type="button">PAUSE</button>
+      <button class="pausebtn" id="hud-pause" type="button">
+        <svg width="10" height="11" viewBox="0 0 10 11" fill="currentColor" aria-hidden="true"><rect x="1" y="0.5" width="2.6" height="10" rx="1"/><rect x="6.4" y="0.5" width="2.6" height="10" rx="1"/></svg>
+        PAUSE</button>
+      <button class="pausebtn" id="hud-menu" type="button">
+        <svg width="15" height="14" viewBox="0 0 15 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><line x1="1" y1="2.5" x2="14" y2="2.5"/><circle cx="10.5" cy="2.5" r="2" fill="currentColor" stroke="none"/><line x1="1" y1="7" x2="14" y2="7"/><circle cx="4.5" cy="7" r="2" fill="currentColor" stroke="none"/><line x1="1" y1="11.5" x2="14" y2="11.5"/><circle cx="8.5" cy="11.5" r="2" fill="currentColor" stroke="none"/></svg>
+        MENU</button>
     </div>
     <div class="rule-hair boardrule"></div>
     <div class="board" id="board"></div>
     <div class="pad-keys" id="keypad"></div>
     <div class="tools">
       <button class="tool" id="tool-undo" type="button"><i class="ticon" aria-hidden="true">&#8634;</i><span>UNDO</span></button>
+      <button class="tool" id="tool-hint" type="button"><i class="ticon" aria-hidden="true">?</i><span>HINT</span></button>
       <!-- pencil notes: lit in oxide while on, so the mode is never in doubt -->
       <button class="tool" id="tool-notes" type="button" aria-pressed="false"><i class="ticon" aria-hidden="true">&#9998;</i><span>NOTES</span></button>
-      <button class="tool" id="tool-hint" type="button"><i class="ticon" aria-hidden="true">?</i><span>HINT</span></button>
-      <button class="tool" id="tool-menu" type="button"><i class="ticon" aria-hidden="true">&#8801;</i><span>MENU</span></button>
     </div>
     <!-- The hint. Below the tools, never over the board, so the cell it names
          stays readable and tappable. It has no timer: it waits for the next

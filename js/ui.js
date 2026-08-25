@@ -47,7 +47,7 @@ var UI = (function () {
      always together — an installed PWA is frozen to the build it was installed
      from, and without a visible version neither the player nor anyone helping
      them can tell whether a fix has actually arrived on the device. */
-  var BUILD = "strata-v16";
+  var BUILD = "strata-v17";
 
   var SCREENS = ["home", "drill", "play", "win", "seed", "break", "records", "lineage", "calendar", "tutor"];
   var hintIndex = null;   // the cell the live hint names, or null
@@ -1482,8 +1482,8 @@ var UI = (function () {
     $("tool-undo").addEventListener("click", doUndo);
     $("tool-notes").addEventListener("click", toggleNotesMode);
     $("tool-hint").addEventListener("click", doHint);
-    $("tool-menu").addEventListener("click", openPlayMenu);
     $("hud-pause").addEventListener("click", openPlayMenu);
+    $("hud-menu").addEventListener("click", openPlayMenu);
     $("btn-set-stone").addEventListener("click", setStone);
 
     $("mn-resume").addEventListener("click", function () { sheet("sheet-menu", false); });
