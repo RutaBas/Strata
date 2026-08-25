@@ -47,7 +47,7 @@ var UI = (function () {
      always together — an installed PWA is frozen to the build it was installed
      from, and without a visible version neither the player nor anyone helping
      them can tell whether a fix has actually arrived on the device. */
-  var BUILD = "strata-v14";
+  var BUILD = "strata-v15";
 
   var SCREENS = ["home", "drill", "play", "win", "seed", "break", "records", "lineage", "calendar", "tutor"];
   var hintIndex = null;   // the cell the live hint names, or null
@@ -537,12 +537,12 @@ var UI = (function () {
     setFoot();
   }
 
+  /* No toast here: it would sit right on the tools row the player is using.
+     The mode is already announced three ways — the lit NOTES chip, the dimmed
+     erase key, and the footer line — so the toggle only needs its sound. */
   function toggleNotesMode() {
     setNotesMode(!notesMode);
     Sound.play(notesMode ? "line" : "place");
-    toast(notesMode
-      ? "Notes on. Arm a weight, then tap a cell to pencil it in or out."
-      : "Notes off. Weights place stones again.");
   }
 
   function setFoot() {

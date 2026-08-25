@@ -14,7 +14,7 @@
    index.html, css/style.css, js/ui.js, js/game.js and js/tutorial.js. Without
    this bump an already-installed player would keep the v4 shell and never see
    either change. */
-var CACHE_VERSION = "strata-v14";
+var CACHE_VERSION = "strata-v15";
 
 var PRECACHE = [
   "./",

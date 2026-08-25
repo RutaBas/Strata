@@ -146,7 +146,7 @@ body.dark .core-edge{filter:brightness(.72) saturate(.9);}
 .mark.m-lesson{background:var(--w2);}
 .mark.m-records{background:var(--w3);}
 .mark.m-calendar{background:var(--w4);}
-.mark.m-settings{background:var(--panel-2);}
+.navchip .mark-svg{display:block;}
 .linrow{min-height:44px;margin-top:6px;width:100%;border:1px dashed rgba(36,31,25,.22);
   border-radius:10px;background:transparent;display:flex;align-items:center;justify-content:center;
   gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
@@ -303,13 +303,19 @@ body.dark .cell.empty{color:rgba(236,229,215,.55);}
 /* while notes are on, the erase key has nothing to toggle and looks it — it
    still answers a tap, with a sentence, rather than doing nothing silently */
 .pad-keys.noting .key.kerase{opacity:.45;}
-/* Spec 2c sizes the play screen's keys up — 62px weights, 52px tools, 11px
-   radii — to spend the dead space under the board. The field lesson keeps the
-   smaller component sizes, so this is scoped to the boardpad. */
-.boardpad .pad-keys{margin-top:20px;}
-.boardpad .key{min-height:62px;border-radius:11px;font-size:19px;}
-.boardpad .key.kerase{font-size:22px;}
-.boardpad .tool{min-height:52px;border-radius:11px;}
+/* Floating stones (option B): the play screen's keys are 44px stone chips,
+   centred with air around them, so they read as the stones themselves rather
+   than a toolbar. The × joins them as an outlined chip. The field lesson keeps
+   the full-width component row, so this is scoped to the boardpad. */
+.boardpad .pad-keys{margin-top:22px;justify-content:center;gap:10px;}
+.boardpad .key{flex:0 0 44px;min-height:44px;border-radius:9px;font-size:15px;}
+.boardpad .key.kerase{background:transparent;box-shadow:inset 0 0 0 1.5px var(--line);
+  font-size:18px;}
+/* the armed ring must beat the kerase outline above, hence re-stated here */
+.boardpad .key.armed{box-shadow:inset 0 0 0 3px var(--accent),0 3px 0 var(--accent-dark);}
+.boardpad .tools{margin-top:14px;}
+.boardpad .tool{min-height:44px;border-radius:9px;font-size:10.5px;}
+.boardpad .ticon{font-size:12px;}
 .tools{display:flex;gap:var(--s2);margin-top:var(--s2);}
 .tool{flex:1;min-height:48px;border:0;border-radius:10px;background:var(--panel);display:flex;align-items:center;
   justify-content:center;flex-direction:column;gap:3px;

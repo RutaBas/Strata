@@ -61,7 +61,15 @@
         <button class="navchip" id="btn-tutor" type="button"><i class="mark m-lesson"></i><span>Lesson</span></button>
         <button class="navchip" id="btn-records" type="button"><i class="mark m-records"></i><span>Records</span></button>
         <button class="navchip" id="btn-calendar" type="button"><i class="mark m-calendar"></i><span>Calendar</span></button>
-        <button class="navchip" id="btn-settings" type="button"><i class="mark m-settings"></i><span>Settings</span></button>
+        <button class="navchip" id="btn-settings" type="button">
+          <!-- survey sliders, in currentColor so dark mode re-inks them -->
+          <svg class="mark-svg" width="15" height="14" viewBox="0 0 15 14" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <line x1="1" y1="2.5" x2="14" y2="2.5"/><circle cx="10.5" cy="2.5" r="2" fill="currentColor" stroke="none"/>
+            <line x1="1" y1="7" x2="14" y2="7"/><circle cx="4.5" cy="7" r="2" fill="currentColor" stroke="none"/>
+            <line x1="1" y1="11.5" x2="14" y2="11.5"/><circle cx="8.5" cy="11.5" r="2" fill="currentColor" stroke="none"/>
+          </svg>
+          <span>Settings</span></button>
       </div>
       <button class="linrow" id="btn-lineage" type="button">Lineage</button>
     </div>
