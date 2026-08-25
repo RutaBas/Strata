@@ -188,18 +188,19 @@ body.dark .linrow{border-color:rgba(236,229,215,.22);}
 .rule-heavy.playrule{margin-top:0;}
 /* The working row: the clock carries the weight, moves stack beside it as a
    small annotation, and PAUSE sits in the head — not in the tools row. */
-.statrow{display:flex;align-items:flex-end;gap:14px;padding:14px 2px 0;
+.statrow{display:flex;align-items:center;gap:14px;padding:14px 2px 0;
   font-family:var(--mono);}
 .statrow .big{font-size:32px;font-weight:700;line-height:.9;color:var(--ink);
   font-variant-numeric:tabular-nums;}
 .movestack{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--dim);line-height:1.5;padding-bottom:3px;}
+  color:var(--dim);line-height:1.5;}
 .pausebtn{margin-left:auto;border:0;cursor:pointer;font-family:var(--mono);
   font-size:11.5px;letter-spacing:.12em;color:var(--ink);background:var(--panel);
   border-radius:9px;padding:13px 17px;box-shadow:inset 0 -2px 0 var(--press);
   transition:transform var(--snap);}
 .pausebtn:active{transform:translateY(2px);}
-.rule-hair.boardrule{margin:26px 0 30px;}
+/* 14px matches the air above the stat row, so the head reads evenly ruled */
+.rule-hair.boardrule{margin:14px 0 30px;}
 .board{display:grid;grid-template-columns:26px repeat(7,1fr);gap:4px;touch-action:manipulation;}
 .clue{font-family:var(--mono);font-size:12px;display:flex;align-items:center;justify-content:center;
   color:var(--dim);font-variant-numeric:tabular-nums;transition:color var(--snap);}

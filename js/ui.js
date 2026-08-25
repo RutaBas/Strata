@@ -47,7 +47,7 @@ var UI = (function () {
      always together — an installed PWA is frozen to the build it was installed
      from, and without a visible version neither the player nor anyone helping
      them can tell whether a fix has actually arrived on the device. */
-  var BUILD = "strata-v15";
+  var BUILD = "strata-v16";
 
   var SCREENS = ["home", "drill", "play", "win", "seed", "break", "records", "lineage", "calendar", "tutor"];
   var hintIndex = null;   // the cell the live hint names, or null
